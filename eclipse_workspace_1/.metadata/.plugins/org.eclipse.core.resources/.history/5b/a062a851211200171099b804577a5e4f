@@ -1,0 +1,151 @@
+import java.util.ArrayList;
+
+import ilog.concert.IloException;
+import ilog.concert.IloNumExpr;
+import ilog.concert.IloNumVar;
+import ilog.cplex.IloCplex;
+
+
+public class Optimizer extends CoreClass {
+
+	Prosument prosument;
+	
+	//Stale
+	private float predkoscBaterii;
+	private float cenaDystrybutoraZewnetrznego;
+	private float cenaBaterii;
+	private float pojemnoscBaterii;
+	private float stanPoczatkowyBaterii;
+	private int horyzontCzasu;
+	private ArrayList<Float> priceVector;
+	
+	//variables	
+	IloNumVar[] binHandelKupuj;
+
+	IloNumVar[] EB; 
+	IloNumVar[] EM_c; 
+	IloNumVar[] EB_c; 
+	IloNumVar[] G_c; 
+	IloNumVar[] EM_s; 
+	IloNumVar[] G_sklad; 
+	IloNumVar[] EB_s; 
+	IloNumVar[] G_s; 
+	
+	IloNumVar[] EM_s_Z; 
+	IloNumVar[] EB_s_Z; 
+	IloNumVar[] G_s_Z; 
+	IloNumVar[] EM_c_Z;
+	
+	float[] C;
+	float[] G;
+	
+	
+	//Solved variables
+	double[] EB_solved; 
+	double[] EM_c_solved; 
+	double[] EB_c_solved; 
+	double[] G_c_solved; 
+	double[] EM_s_solved; 
+	double[] G_sklad_solved; 
+	double[] EB_s_solved; 
+	double[] G_s_solved; 
+	double[] binHandelKupuj_solved;
+	
+	double[] EM_s_Z_solved; 
+	double[] EB_s_Z_solved; 
+	double[] G_s_Z_solved; 
+	double[] EM_c_Z_solved;
+	
+	
+	//Singleton shit
+	private static Optimizer instance = null;
+	private Optimizer() 
+	{
+	}
+	
+	public static Optimizer getInstance() {
+	      if(instance == null) {
+	         instance = new Optimizer();
+	      }
+	      return instance;
+	}
+	
+	
+	//-----------
+	//OTHER FUNCTIONS
+	
+	//TODO
+	//wyznacz sterowanie bez znanych wynikow handlu
+	public ArrayList<DayData> wyznaczSterowanie(ArrayList<Float> priceVector, Prosument prosument)
+	{
+		return wyznaczSterowanie(priceVector, prosument, null);
+	}
+	
+	public ArrayList<DayData> wyznaczSterowanie(ArrayList<Float> priceVector, Prosument prosument, DayData constrianMarker)
+   {
+		ArrayList<DayData> outputList = new ArrayList<DayData>();
+		
+		try {
+			IloCplex cplex = new IloCplex();
+			
+			//this must be set outside of setVariables!
+			this.prosument = prosument;
+			
+			setVariables(priceVector, cplex);
+
+			IloNumExpr objective = null;
+			int a=0;
+			while (a<horyzontCzasu)
+			{
+				
+				IloNumExpr objectiveAdd =createObjective(cplex,a);
+				
+				//createObjective();
+				if (objective==null)
+				{
+					objective=objectiveAdd;
+				}
+				else
+				{
+					objective=cplex.sum(objective,objectiveAdd);
+				}
+				
+				createConstrain(cplex,a);
+				a++;
+			}
+			
+			
+			cplex.addEq(stanPoczatkowyBaterii, EB[0]);
+			
+			//adds constrians for final decision
+			if (constrianMarker!=null)
+			{
+				dodajConstrainWynikowHandlu(cplex,constrianMarker );
+			}
+			
+			cplex.addMinimize(objective);
+			
+			cplex.setOut(null);
+			if (cplex.solve())
+			{
+				fillOutSolvedVariables(cplex);	
+				constrainCheck();
+				zapakujDoData2List(outputList);
+			
+				cplex.end();
+			}
+			else
+			{
+				getInput("CPLEX FAILED!");
+			}
+			
+		} catch (IloException e) {
+			e.printStackTrace();
+		}
+
+		
+		return outputList;
+	}	
+
+	
+}

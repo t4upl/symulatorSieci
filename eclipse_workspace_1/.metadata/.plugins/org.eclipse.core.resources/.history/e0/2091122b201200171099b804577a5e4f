@@ -1,0 +1,17 @@
+
+public class Optimizer {
+
+	//Singleton shit
+	private static Optimizer instance = null;
+	private Optimizer() 
+	{
+	}
+	
+	public static Optimizer getInstance() {
+	      if(instance == null) {
+	         instance = new Optimizer();
+	      }
+	      return instance;
+	}
+	
+}

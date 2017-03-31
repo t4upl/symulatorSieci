@@ -1,0 +1,150 @@
+import java.util.ArrayList;
+
+import symulacja2.DayData2;
+import symulacja2.Prosument2;
+
+
+
+public class Agregator {
+	
+	private int scenariusz = Stale.scenariusz;
+	
+	//String outputFolder;
+	private ArrayList<Prosument> listaProsumentow;
+	String simulationEndDate=Stale.simulationEndDate;
+	
+	//SYSTEM
+	Reporter reporter = Reporter.getInstance();
+
+	
+	//Singleton shit
+	private static Agregator instance = null;
+	private Agregator() 
+	{
+	}
+	
+	public static Agregator getInstance() {
+	      if(instance == null) {
+	         instance = new Agregator();
+	      }
+	      return instance;
+	}
+	//--------------------------
+	//SETTERS
+	
+	public void setListaProsumentow(ArrayList<Prosument> listaProsumentow)
+	{
+		this.listaProsumentow =  listaProsumentow;
+	}
+	
+	//--------------------------
+	//OTHER FUNCTIONS
+	
+	//TODO
+	//--------------------------
+	//OTHER FUNCTIONS
+	
+	//TODO
+	void run()
+	{
+		
+		//indexy prosumentow biorace udzial w agregacji
+		Integer[] indexArray = createArray(0,listaProsumentow.size() );		
+		createAgregateReport(100,indexArray,"all prosuments");
+		
+		//Uwaga! create array zwraca tablice indeksow a nie ID prosumentow!
+		indexArray = createArray(0,4);
+		createAgregateReport(101,indexArray,"pierwszych 4");
+		
+		indexArray = createArray(4,16-4);
+		createAgregateReport(102,indexArray,"ostatnich 12");
+		
+		indexArray = createArray(5,2);
+		createAgregateReport(102,indexArray,"prosumenci 5_6");
+	}
+	
+	Integer[] createArray(int indexPoczatkowy, int liczbaElementow)
+	{
+		Integer[] indexArray = new Integer[liczbaElementow];	
+		int a=0;
+		while(a<liczbaElementow)
+		{
+			indexArray[a]=indexPoczatkowy+a;
+			a++;
+		}
+		
+		return indexArray;
+	}
+	
+	void createAgregateReport(int ID, Integer[] indexArray, String reportNote)
+	{
+		Prosument prosument2 = createNewProsument(ID);
+		prosument2.setReportNote(reportNote);
+		
+		int a=0;
+		while (a<indexArray.length)
+		{	
+		
+			int IDdodawanegoProsumenta =indexArray[a];
+			Prosument dodawanyProsument =listaProsumentow.get(IDdodawanegoProsumenta);
+			
+			addProsument(prosument2,dodawanyProsument,IDdodawanegoProsumenta  );
+			
+			a++;
+		}
+		
+		prosument2.DayDataDivide(indexArray.length);
+		
+		//false bo unused geenration licozna jako srednia a nie na podstawie danych
+		prosument2.performEndOfSimulationCalculations(false);
+		
+		
+		reporter.createProsumentReport(prosument2);
+
+	}
+	
+	//stowrz prostego rposumenta  z putsymi (zeorwymi) DayData w DayDataList
+	Prosument createNewProsument(int ID)
+	{
+		Prosument prosument = new Prosument();
+		prosument.setID(ID);
+		prosument.createEmptyDataList(listaProsumentow.get(0).getDayDataList().size());
+		return prosument;
+	}
+	
+	//ID for debug only
+		void addProsument(Prosument2 prosument1, Prosument2 prosument2,int ID)
+		{
+			ArrayList<DayData2> dayDataList = prosument1.getDayDataList();
+			ArrayList<DayData2> dayDataList2 = prosument2.getDayDataList();
+
+			
+			
+			int a=0;
+			while (a<dayDataList.size())
+			{
+				DayData2 dayData = dayDataList.get(a);
+				DayData2 dayData2 = dayDataList2.get(a);
+				
+				/*if (a==8)
+				{
+					print("addProsument ID:"+ID+" "+dayData2.getTrueGeneration());
+					print("addProsument d1 "+dayData.getTrueGeneration());
+					print("addProsument d2 "+dayData2.getTrueGeneration());
+					getInput("hello");
+				}*/
+				
+				addDayData(dayData,dayData2,ID,a);
+				
+				/*
+				if (a==8)
+				{
+					print("post add addProsument d2 "+dayData2.getTrueGeneration());
+					getInput("stop");
+				}*/
+				
+				a++;
+			}
+		}
+	
+}

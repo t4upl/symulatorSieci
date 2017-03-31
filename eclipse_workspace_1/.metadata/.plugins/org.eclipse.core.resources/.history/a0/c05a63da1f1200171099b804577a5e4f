@@ -1,0 +1,17 @@
+
+public class Optimizer {
+
+	//Singleton shit
+	private static ListaProsumentowWrap instance = null;
+	private ListaProsumentowWrap() 
+	{
+	}
+	
+	public static ListaProsumentowWrap getInstance() {
+	      if(instance == null) {
+	         instance = new ListaProsumentowWrap();
+	      }
+	      return instance;
+	}
+	
+}

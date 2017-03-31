@@ -1,0 +1,493 @@
+package symulacja2;
+
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class Rynek {
+	
+	private int liczbaProsumentow;
+	
+	//lista punktow przekazana przez prosumentow
+	private ArrayList<ArrayList<Point>> listaFunkcjiUzytecznosci;
+	
+	//lista profili cen
+	private ArrayList<ArrayList<Float>> priceVectorsList;
+	
+	
+	float cenaMinimalnaNaRynkuLokalnym =0f;
+	float cenaMaksymalnaNaRynkuLokalnym =0.56f;
+	
+	final int limitIteracji=3;
+	final int limitIteracjiBisekcji=20;
+	
+	//obecna iteracja ograniczona prze zlimit iteracji
+	int iteracja;
+	
+	//słuzy jedynie do debgua, rowny indeksowi z LokalnegoCentrum
+	int debugIteracja =0;
+	
+	ListaProsumentow2 listaProsumentow;
+	
+	//System
+	Scanner sc = new Scanner (System.in);
+	
+	
+	//Singleton shit
+	private static Rynek instance = null;
+	private Rynek() 
+	{
+	}
+	
+   public static Rynek getInstance() {
+	      if(instance == null) {
+	         instance = new Rynek();
+	      }
+	      return instance;
+	}
+	
+	//SETTERS
+	public void setListaProsumentow(ListaProsumentow2 listaProsumentow2)
+	{
+		this.listaProsumentow = listaProsumentow2;
+	}
+	
+	//-----------------------------
+	//OTHER FUNCTIONS
+	
+	String pointListToString(ArrayList<Point> pointList)
+	{
+		String s="";
+		int a=0;
+		while (a<pointList.size())
+		{	
+			if (a>0)
+			{
+				s=s+"\n";
+			}
+			
+			s=s+"a:\n"+pointList.get(a).toString();
+			a++;
+		}
+		return s;
+	}
+	
+	public void addPricePoint(Prosument2 prosument, Point point)
+	{
+		
+		int idListy = prosument.getID()-1;
+		ArrayList<Point> pointList = listaFunkcjiUzytecznosci.get(idListy);		
+		
+		
+		if (pointList.size()==0)
+		{
+			pointList.add(point);
+		}
+		else
+		{
+			Boolean notFound = true; 
+			
+			int a=0;
+			while (a<pointList.size() && notFound)
+			{
+				if (point.getPrice()<pointList.get(a).getPrice())
+				{
+					
+					if (a>0)
+					{
+						updateAlfa(pointList.get(a-1),point,prosument);
+					}
+					
+					updateAlfa(point,pointList.get(a),prosument);
+					
+					pointList.add(a, point);
+					notFound=false;
+					
+				}
+				
+				a++;
+			}
+			
+			if (notFound)
+			{
+				updateAlfa(pointList.get(pointList.size()-1),point,prosument);
+				pointList.add(point);
+			}
+			
+		}
+		
+		
+	}
+	
+	void BroadcastCenaAmongProsuments(ArrayList<Float> priceVector)
+	{
+		//getInput("BroadcastCenaAmongProsuments");
+		ArrayList<Prosument2> L1 =listaProsumentow.getListaProsumentow(); 
+		
+		int a=0;
+		while (a<L1.size())
+		{
+			//wyznacz i dodaj punkt do funckji podazy
+			L1.get(a).takePriceVector(priceVector);
+			a++;
+		}
+		
+		//for history reasons
+		//last price in 
+		priceVectorsList.add(priceVector);
+		this.wyznaczCeneAndBroadcast();
+
+	}
+	
+	void rozpiszKontrakty()
+	{
+		getInput("rozpiszKontrakty");
+		
+		
+		float wolumenHandlu = 0f;
+		float sumaKupna = 0f;
+		float sumaSprzedazy = 0f;
+		
+		//ostatnia zadeklarowana cena wsrod prosumentow
+		float cena =(priceVectorsList.get(priceVectorsList.size()-1)).get(0);
+		
+		//index pod ktorym point.cena = cena ostatnio zadeklarowana
+		int index =-1;
+		
+		//wyznacz index taki ze point(index).cerna == ostatnia zadeklarowana cena
+		ArrayList<Point> L1	=listaFunkcjiUzytecznosci.get(0);
+				
+		int a=0;
+		while (a<L1.size() && index==-1)
+		{
+			if (L1.get(a).getPrice()==cena)
+			{
+				index=a;
+				print("index "+index);
+			}
+			a++;
+		}
+		
+		if (index==-1)
+		{
+			getInput("rozpiszKontrakty ERROR");
+		}
+		
+		
+		//znajdz sumaryczna kupno i sumaryczna sprzedaz
+		a=0;
+		while(a<listaFunkcjiUzytecznosci.size())
+		{
+			L1	=listaFunkcjiUzytecznosci.get(a);
+			float energia = L1.get(index).getIloscEnergiiDoKupienia();
+			
+			if (energia>0)
+			{
+				sumaKupna+=energia;
+			}
+			else
+			{
+				sumaSprzedazy-=energia;
+			}
+			
+			a++;
+		}
+		
+		wolumenHandlu =Math.min(sumaKupna,sumaSprzedazy);
+		
+		//wyznacz wolumen handlu dla kazdego z prosumentow
+		ArrayList<Prosument2> listaProsumentowTrue =listaProsumentow.getListaProsumentow();
+
+		a=0;
+		while (a<listaProsumentowTrue.size())
+		{
+			// ustala bianrke kupuj
+			// ustala clakowita sprzedaz (jako generacje)
+			//ustala calkowite kupno (jako consumption)
+			DayData2 constrainMarker  = new DayData2();
+			
+			L1	=listaFunkcjiUzytecznosci.get(a);
+			float energia = L1.get(index).getIloscEnergiiDoKupienia();
+			
+			if (energia>0)
+			{
+				constrainMarker.setKupuj(1);
+				constrainMarker.setGeneration(energia);
+				
+			}
+			else
+			{
+				constrainMarker.setKupuj(0);
+				constrainMarker.setConsumption(energia);
+			}
+			
+			ArrayList<Float> priceVector = priceVectorsList.get(priceVectorsList.size()-1);
+			
+			//poinformuj prosumenta o wyniakch handlu i dostosuj go do wynikow
+			listaProsumentowTrue.get(a).getKontrakt(priceVector,constrainMarker);
+			
+			a++;
+		}
+		
+		
+		getInput("rozpiszKontrakty -end");
+	}
+	
+	
+	public void wyznaczCeneAndBroadcast()
+	{
+		//getInput("wyznaczCeneAndBroadcast -start");	
+		
+		if (iteracja<limitIteracji)
+		{
+			
+			float cena =wyznaczCene();
+
+			//getInput("wyznaczCeneAndBroadcast - iteracja<limitIteracji, itartion "+iteracja);
+			
+			
+			//spreparuj vector cen
+			ArrayList<Float> priceVector = new ArrayList<Float> (priceVectorsList.get(priceVectorsList.size()-1));
+			priceVector.set(0, cena);
+			
+			iteracja++;
+			
+			BroadcastCenaAmongProsuments(priceVector);
+		}
+		else
+		{
+			getInput("wyznaczCeneAndBroadcast -end OVER THE LIMIT");
+			rozpiszKontrakty();
+		}
+	}
+	
+	float wyznaczCene()
+	{
+		
+		ArrayList<Point> L1 =listaFunkcjiUzytecznosci.get(0);
+		
+		float leftBound = L1.get(0).getPrice();
+		float rightBound = L1.get(2).getPrice();
+		
+		float leftBoundValue=1; //inicjalizacja pozwala wejsc do loop'a
+		float rightBoundValue=-1;
+		float srodekValue = -1;
+		
+		//leftBound = 4; //test case
+		//rightBound=10;
+		
+		float srodek = -1;
+
+		
+		int a=0;
+		while (leftBoundValue!=rightBoundValue && a<limitIteracjiBisekcji)
+		{
+			leftBoundValue = funkcjaBilansujacaRynek(leftBound);
+			rightBoundValue = funkcjaBilansujacaRynek(rightBound);
+			
+			srodek = (leftBound+rightBound)/2;
+			srodekValue = funkcjaBilansujacaRynek(srodek);
+			
+			if (srodekValue>0)
+			{
+				leftBound=srodek;
+			}
+			else
+			{
+				rightBound=srodek;
+			}
+			
+			a++;
+		}
+		
+		return srodek;
+	}
+	
+	float funkcjaBilansujacaRynek(float price)
+	{
+		//float test =-8*price+5; //return this if you are testing
+		
+		//indeks ceny ktora zawiera alfe i bete funckji do ktorwej nalezy cena
+		//price(a)<  price < price(a+1)
+		
+		ArrayList<Point> L1 = listaFunkcjiUzytecznosci.get(0);
+		
+		//cena wyszla poza dostepne granice
+		if (price<L1.get(0).getPrice() || price>L1.get(L1.size()-1).getPrice())
+		{
+			getInput("funkcjaBilansujacaRynek -problem");
+		}
+		
+		int indexAlfy = 0;
+		int a=0;
+		while (price<L1.get(a).getPrice())
+		{
+			a++;
+		}
+		
+		indexAlfy=a;
+		
+		//print(L1.get(indexAlfy).getPrice()+" "+price+" "+L1.get(indexAlfy+1).getPrice());
+		//getInput("Firs Step end");
+		
+		
+		//obliczanie sprzedazy i kupna prosumentow
+		float sumaKupna = 0f;
+		float sumaSprzedazy =0f;
+		
+		a=0;
+		while(a<listaFunkcjiUzytecznosci.size())
+		{
+			L1 = listaFunkcjiUzytecznosci.get(a);
+			Point p = L1.get(indexAlfy);
+			
+			
+			
+			float energia = p.getAlfa()*price +p.getBeta();
+			
+			if (energia>0)
+			{
+				sumaKupna=sumaKupna+energia;
+			}
+			else
+			{
+				//ilosc energii dla sprzedazy jest ujemna
+				sumaSprzedazy=sumaSprzedazy-energia;
+			}
+			
+			a++;
+		}
+		
+		//print (sumaKupna+" "+sumaSprzedazy);
+		//getInput(" funkcjaBilansujacaRynek");
+				
+		return sumaKupna-sumaSprzedazy;
+	}
+	
+	public void updateAlfa(Point p1, Point p2, Prosument2 prosument)
+	{
+		float alfa = p1.getIloscEnergiiDoKupienia()-p2.getIloscEnergiiDoKupienia();
+		alfa = alfa / (p1.getPrice()-p2.getPrice());
+		
+		float beta = p1.getIloscEnergiiDoKupienia()-alfa * p1.getPrice();
+		
+		if (alfa > 0)
+		{
+			print("\nprosument ID: "+prosument.getID());
+			print("alfa "+alfa);
+			print("iteration "+iteracja);
+			
+			print ("p1 "+p1.getPrice());
+			print ("p2 "+p2.getPrice());
+			getInput("updateAlfa - error");
+			
+		}
+		
+		p1.setAlfa(alfa);
+		p1.setBeta(beta);
+	}
+
+	//Odpalanae na poczatku kazdego simulationStepu
+	public void reset()
+	{
+		iteracja =0;
+		
+		listaFunkcjiUzytecznosci = new ArrayList<ArrayList<Point>>();
+		
+		int a=0;
+		while (a<liczbaProsumentow)
+		{
+			listaFunkcjiUzytecznosci.add(new ArrayList<Point>());
+			a++;
+		}
+		
+		priceVectorsList = new ArrayList<ArrayList<Float>>();
+		
+	}
+	
+	public void setLiczbaProsumentow(int liczbaProsumentow)
+	{
+		this.liczbaProsumentow=liczbaProsumentow;
+	}
+	
+	public ArrayList<ArrayList<Float>> predykcjaCenNaRynkuLokalnym(ListaProsumentow2 listaProsumentow2, int timeIndex)
+	{
+		ArrayList<Float> listaSumarycznejGeneracji = listaProsumentow2.getListaSumarycznejGeneracji(timeIndex);
+		ArrayList<Float> listaSumarycznejKonsumpcji = listaProsumentow2.getListaSumarycznejKonsumpcji(timeIndex);
+
+		ArrayList<Float> normalnaPredykcja =predictPrice(listaSumarycznejGeneracji,listaSumarycznejKonsumpcji);
+		
+		priceVectorsList.add(normalnaPredykcja);
+		
+		ArrayList<ArrayList<Float>> listaPredykcjiCen= new ArrayList<ArrayList<Float>>();
+		
+		
+		//nizsza 
+		ArrayList<Float> predykcjaZNizszaCena=new ArrayList<Float>(normalnaPredykcja);		
+		ArrayList<Float> predykcjaZWyzszaCena=new ArrayList<Float>(normalnaPredykcja);
+		
+		float nizszaCena =(normalnaPredykcja.get(0)+cenaMinimalnaNaRynkuLokalnym)/2 ;
+		float wyzszaCena=(normalnaPredykcja.get(0)+cenaMaksymalnaNaRynkuLokalnym)/2;
+		
+		predykcjaZNizszaCena.set(0, nizszaCena);
+		predykcjaZWyzszaCena.set(0, wyzszaCena);
+		
+		listaPredykcjiCen.add(predykcjaZNizszaCena);
+		listaPredykcjiCen.add(normalnaPredykcja);
+		listaPredykcjiCen.add(predykcjaZWyzszaCena);
+		
+		return listaPredykcjiCen;
+	}
+	
+	
+	ArrayList<Float> predictPrice(ArrayList<Float> listaSumarycznejGeneracji, ArrayList<Float> listaSumarycznejKonsumpcji) 
+	{
+		float expislon = 0.01f;
+		
+		ArrayList<Float> L1 =new ArrayList<Float> ();
+		int a=0;
+		while (a<listaSumarycznejGeneracji.size())
+		{
+			float wartoscDoDodania=expislon;
+			if (listaSumarycznejKonsumpcji.get(a)>0)
+			{
+				wartoscDoDodania=(listaSumarycznejKonsumpcji.get(a)-listaSumarycznejGeneracji.get(a))/listaSumarycznejKonsumpcji.get(a);
+				wartoscDoDodania=wartoscDoDodania*cenaMaksymalnaNaRynkuLokalnym;
+			}
+			
+			//Ograniczenia na predykcje ceny 
+			wartoscDoDodania=Math.max(wartoscDoDodania,expislon);
+			wartoscDoDodania=Math.min(wartoscDoDodania,cenaMaksymalnaNaRynkuLokalnym-expislon);
+			
+			L1.add(wartoscDoDodania);
+			
+			
+			a++;
+		}
+		
+		//	print(Arrays.toString(L1.toArray()));			
+		return L1;
+	}
+	
+	
+	void print(int a)
+	{
+		print(((Integer)a).toString());
+	}
+	
+	void print(String s)
+	{
+		System.out.println("Rynek "+s);
+	}
+	
+	void getInput(String s)
+	{
+		print("getInput "+s);
+		sc.nextLine();
+	}
+	
+	void getInput()
+	{
+		getInput("");
+	}
+	
+}

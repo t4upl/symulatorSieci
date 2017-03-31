@@ -1,0 +1,241 @@
+package symulacja2;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Scanner;
+
+public class LokalneCentrumDystrybucji2 {
+		
+		//Edytowalne
+		int scenariusz=2;
+		
+		//Wewnetrzne parametry symulacji
+		float cenaDystrybutoraZewnetrznego=0.56f;
+		
+		//Folder z danymi zawierajacy foldery zuzycie i cars
+		String mainFolder;
+		//Folder z główny outputem, potem zmienia sie w outputFolder//Scenarion
+		String outputFolder;
+
+		
+		ArrayList<String> hourList = new ArrayList<String>(); //zawiera dzien i godzine (ograniczone przez simulationEndDate)
+		ListaProsumentow2 listaProsumentow2;
+		
+		//Stale
+		String simulationEndDate = "2015-07-01 00:00";
+		int liczbaProsumentow =16;
+		Boolean handel=true;
+		int horyzontCzasowy=24;
+		
+		//Zmienne
+		int timeIndex=0;
+
+		//System
+		Scanner sc = new Scanner (System.in);
+		Optimizer optimizer = new Optimizer();
+		Rynek rynek = Rynek.getInstance();
+		
+		
+		LokalneCentrumDystrybucji2(String folderZDanymi, String outputFolder)
+		{
+			this.mainFolder=folderZDanymi;
+			this.outputFolder=outputFolder;
+		}
+		
+		void stworzProsumentow(String outputFolder)
+		{
+			listaProsumentow2=new ListaProsumentow2(mainFolder+"\\zuzycie",liczbaProsumentow,simulationEndDate,outputFolder);
+			listaProsumentow2.setProsumentsBegin(optimizer, horyzontCzasowy);
+			
+			rynek.setListaProsumentow(listaProsumentow2);
+			
+		}
+		
+		void modyfikatorScenariusza()
+		{
+			listaProsumentow2.modyfikatorScenariusza(cenaDystrybutoraZewnetrznego,scenariusz);
+			
+			switch (scenariusz)
+			{
+				case 1: scenarioOne(); break;
+				case 2: break;
+				default: print("!!!NO SUCH SCENARIO+"); sc.nextLine();
+			}
+		}
+		
+		
+		
+		void scenarioOne()
+		{
+			handel =false;
+		}
+		
+		
+		void createOutputFolder()
+		{
+			String newlyCreatedFolder=outputFolder+"//Scenario_"+scenariusz;
+			File dir = new File(newlyCreatedFolder);
+			dir.mkdir();
+			outputFolder=newlyCreatedFolder;			
+		}
+		
+		public void start()
+		{
+			createOutputFolder();
+			
+			//System.out.println("\n-----\nLokalne CentrumDystryucji start - start");
+			createHoursList(); //zrob liste godzin
+			//Helper.printStringList(hourList);
+			stworzProsumentow(outputFolder);
+			modyfikatorScenariusza();
+			
+			
+			
+			startSimulation();
+			
+			endSimulation();
+			
+			//dropResults();
+			
+			System.out.println("\n-----Lokalne CentrumDystryucji start - end");
+			
+		}
+		
+		void endSimulation()
+		{
+			print("end simulation");
+			
+			listaProsumentow2.endSimulationReport(scenariusz);
+			AgregatorReporter arg = new AgregatorReporter(scenariusz,outputFolder,listaProsumentow2.getListaProsumentow(),simulationEndDate,hourList);
+			
+			listaProsumentow2.consistencyCheck();
+			
+		}
+		
+		void print(String s)
+		{
+			System.out.println("LokalneCentrum2 "+s);
+		}
+		
+		void startSimulation()
+		{			
+			rynek.setLiczbaProsumentow(liczbaProsumentow);
+			
+			print("startSimulation");
+			int a=0;
+			while(a<hourList.size())
+			{
+				rynek.reset();
+
+				simulationStep();				
+				a++;
+			}
+		}
+		
+		void predykcjaCenNaRynkuLokalnym()
+		{
+			if (handel)
+			{
+				ArrayList<ArrayList<Float>> priceVector = rynek.predykcjaCenNaRynkuLokalnym(listaProsumentow2,timeIndex);				
+				
+				//rozeslij ene wsrod prosumentow, prosumenci odpowiadaja iloscia energii
+				listaProsumentow2.broadcastFirstPriceVector(priceVector);
+				
+				//wyzancz cene
+				rynek.wyznaczCeneAndBroadcast();
+			}
+		}
+		
+
+		
+		void zaktualizujHandelProsumentow()
+		{
+			if (!handel)
+			{
+				listaProsumentow2.zaktualizujHandelProsumentow();	
+			}
+			
+		}
+		
+		void simulationStep()
+		{
+			print ("simualtion step "+hourList.get(timeIndex));
+			
+			//zainicjalizuj proces handlu, przeprowadz go i rozpisz kontrakty
+			predykcjaCenNaRynkuLokalnym();
+			
+			
+			//3. Zaktualizuj prosumentow gdy nie am handlu
+			zaktualizujHandelProsumentow();
+			
+			Tick();
+			
+			//print("stop+");
+			//sc.nextLine();
+		}
+		
+		void Tick()
+		{
+			timeIndex++;
+			listaProsumentow2.tickProsuments();
+		}
+		
+		void createHoursList()
+		{
+			String pathToData=mainFolder+"\\zuzycie\\1.csv";
+			
+			//System.out.println("\n-----\nLokalne CentrumDystryucji createHoursList - start");
+	        BufferedReader br = null;
+	        String line="";
+
+	        Boolean body=false;
+	        Boolean stop=false;
+
+	        
+	        try {
+				br = new BufferedReader(new FileReader(pathToData));
+		        while ((line = br.readLine()) != null && !stop)
+		        {
+		        	if (body)
+		        	{	
+		        		
+		        		String[] s2 = line.split(",");
+		        		
+		        		if (s2[0].equals(simulationEndDate))
+		        		{
+		        			stop=true;
+		        		}
+		        		
+		        		if (!stop)
+		        		{
+			        		//System.out.println(line);
+		        			hourList.add(s2[0]);
+		        		}
+		        		
+		        	}
+		        	else
+		        	{
+			        	if (line.equals("###"))
+			        	{
+			        		body=true;
+			        	}
+		        	}
+		        }
+					
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	        
+			//System.out.println("\n-----\nLokalne CentrumDystryucji createHoursList - end");
+		}
+		
+		void getInput()
+		{
+			print("Input");
+			sc.nextLine();
+		}
+}

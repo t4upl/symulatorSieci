@@ -1,0 +1,190 @@
+import java.util.ArrayList;
+
+import ilog.concert.IloException;
+import ilog.concert.IloNumExpr;
+import ilog.concert.IloNumVar;
+import ilog.cplex.IloCplex;
+import symulacja2.DayData2;
+
+
+public class Optimizer extends CoreClass {
+
+	Prosument prosument;
+	
+	//Stale
+	private float predkoscBaterii;
+	private float cenaDystrybutoraZewnetrznego =Stale.cenaDystrybutoraZewnetrznego;
+	private float cenaBaterii = Stale.ce;
+	private float pojemnoscBaterii;
+	private float stanPoczatkowyBaterii;
+	private int horyzontCzasu;
+	private ArrayList<Float> priceVector;
+	
+	//variables	
+	IloNumVar[] binHandelKupuj;
+
+	IloNumVar[] EB; 
+	IloNumVar[] EM_c; 
+	IloNumVar[] EB_c; 
+	IloNumVar[] G_c; 
+	IloNumVar[] EM_s; 
+	IloNumVar[] G_sklad; 
+	IloNumVar[] EB_s; 
+	IloNumVar[] G_s; 
+	
+	IloNumVar[] EM_s_Z; 
+	IloNumVar[] EB_s_Z; 
+	IloNumVar[] G_s_Z; 
+	IloNumVar[] EM_c_Z;
+	
+	float[] C;
+	float[] G;
+	
+	
+	//Solved variables
+	double[] EB_solved; 
+	double[] EM_c_solved; 
+	double[] EB_c_solved; 
+	double[] G_c_solved; 
+	double[] EM_s_solved; 
+	double[] G_sklad_solved; 
+	double[] EB_s_solved; 
+	double[] G_s_solved; 
+	double[] binHandelKupuj_solved;
+	
+	double[] EM_s_Z_solved; 
+	double[] EB_s_Z_solved; 
+	double[] G_s_Z_solved; 
+	double[] EM_c_Z_solved;
+	
+	
+	//Singleton shit
+	private static Optimizer instance = null;
+	private Optimizer() 
+	{
+	}
+	
+	public static Optimizer getInstance() {
+	      if(instance == null) {
+	         instance = new Optimizer();
+	      }
+	      return instance;
+	}
+	
+	
+	//-----------
+	//OTHER FUNCTIONS
+	
+	//TODO
+	//wyznacz sterowanie bez znanych wynikow handlu
+	public ArrayList<DayData> wyznaczSterowanie(ArrayList<Float> priceVector, Prosument prosument)
+	{
+		return wyznaczSterowanie(priceVector, prosument, null);
+	}
+	
+	public ArrayList<DayData> wyznaczSterowanie(ArrayList<Float> priceVector, Prosument prosument, DayData constrianMarker)
+   {
+		ArrayList<DayData> outputList = new ArrayList<DayData>();
+		
+		try {
+			IloCplex cplex = new IloCplex();
+			
+			//this must be set outside of setVariables!
+			this.prosument = prosument;
+			
+			setVariables(priceVector, cplex);
+
+			IloNumExpr objective = null;
+			int a=0;
+			while (a<horyzontCzasu)
+			{
+				
+				IloNumExpr objectiveAdd =createObjective(cplex,a);
+				
+				//createObjective();
+				if (objective==null)
+				{
+					objective=objectiveAdd;
+				}
+				else
+				{
+					objective=cplex.sum(objective,objectiveAdd);
+				}
+				
+				createConstrain(cplex,a);
+				a++;
+			}
+			
+			
+			cplex.addEq(stanPoczatkowyBaterii, EB[0]);
+			
+			//adds constrians for final decision
+			if (constrianMarker!=null)
+			{
+				dodajConstrainWynikowHandlu(cplex,constrianMarker );
+			}
+			
+			cplex.addMinimize(objective);
+			
+			cplex.setOut(null);
+			if (cplex.solve())
+			{
+				fillOutSolvedVariables(cplex);	
+				constrainCheck();
+				zapakujDoData2List(outputList);
+			
+				cplex.end();
+			}
+			else
+			{
+				getInput("CPLEX FAILED!");
+			}
+			
+		} catch (IloException e) {
+			e.printStackTrace();
+		}
+
+		
+		return outputList;
+	}
+	
+	void setVariables(ArrayList<Float> priceVector, IloCplex cplex)
+   {
+	   
+	   
+		this.predkoscBaterii =prosument.getPredkoscBaterii();
+		this.cenaBaterii = prosument.getKosztAmortyzacjiBaterii();
+		this.pojemnoscBaterii = prosument.getPojemnoscBaterii();
+		this.priceVector =priceVector;
+		
+		ArrayList <DayData2> L2 = prosument.getDayDataList();
+		this.stanPoczatkowyBaterii =L2.get(prosument.getTimeIndex()).getStanBateriiNaPoczatkuSlotu();
+		this.horyzontCzasu =priceVector.size();
+		
+		binHandelKupuj = stworzWektorZmiennychBinarnych(horyzontCzasu, cplex);
+
+
+		EB = stworzWektorZmiennychCiaglych(horyzontCzasu,pojemnoscBaterii, cplex); 
+		EM_c = stworzWektorZmiennychCiaglych(horyzontCzasu,reallyBigNumber, cplex); 
+		EB_c = stworzWektorZmiennychCiaglych(horyzontCzasu,predkoscBaterii, cplex); 
+		G_c = stworzWektorZmiennychCiaglych(horyzontCzasu,reallyBigNumber, cplex); 
+		EM_s = stworzWektorZmiennychCiaglych(horyzontCzasu,predkoscBaterii, cplex); 
+		G_sklad = stworzWektorZmiennychCiaglych(horyzontCzasu,predkoscBaterii, cplex); 
+		EB_s = stworzWektorZmiennychCiaglych(horyzontCzasu,predkoscBaterii, cplex); 
+		G_s = stworzWektorZmiennychCiaglych(horyzontCzasu,reallyBigNumber, cplex); 
+		
+		//zmienne dodatkowe do poradzenia sobie z kwadratowa natura constrainow
+		EM_s_Z = stworzWektorZmiennychCiaglych(horyzontCzasu,predkoscBaterii, cplex); 
+		EB_s_Z = stworzWektorZmiennychCiaglych(horyzontCzasu,predkoscBaterii, cplex); 
+		G_s_Z = stworzWektorZmiennychCiaglych(horyzontCzasu,reallyBigNumber, cplex); 
+		EM_c_Z = stworzWektorZmiennychCiaglych(horyzontCzasu,reallyBigNumber, cplex);
+		
+		
+		ArrayList<DayData> dayDataList24 = prosument.getDayDataListInT(horyzontCzasu);
+		
+		C = getConsumptionArray(dayDataList24);
+		G = getGenerationArray(dayDataList24); 
+   }	
+
+	
+}

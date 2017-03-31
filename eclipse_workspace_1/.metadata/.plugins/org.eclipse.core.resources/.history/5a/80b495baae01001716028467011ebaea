@@ -1,0 +1,700 @@
+package symulacja2;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Scanner;
+
+public class Prosument2 {
+	
+	float stosunekGeneracjiDoKonsumpcji=0f;
+	ArrayList<DayData2> dayDataList = new ArrayList<DayData2>();
+	
+	//Stale
+	Boolean handel=true;
+	int ID;
+	float cenaDystrybutoraZewnetrznego=0.56f;
+	float mnoznikGeneracji=0f;
+	String outputFolder;
+	String transactionFolder;
+	
+	private int horyzontCzasowy=24;
+	Boolean active=false;//active user has: EV, battery or generation
+
+	
+	//bateria
+	float pojemnoscBateriiIfEnabled =13.5f ; //pojemnosc baterii, jezeli bylaby aktywowana
+	float predkoscBaterii = 5f; //ile energii moze przekazac bateria w trakcie slotu czasowego
+	String simulationEndDate; //set during load full date day + hour
+	String simulationEndDateJustDay;//set 
+	float kosztAmortyzacjiBaterii =0.31f;
+
+	//Variables
+	int timeIndex=0; //okresla moment czasu
+	float pojemnoscBaterii =0f;//faktyczna pojemnsoc baterii
+	int transactionIteration =0;//rosnie po kolejnych iteracjach
+	
+	//Other
+	Scanner sc = new Scanner(System.in);
+	//Optimizer optimizer;
+	Reporter reporter= new Reporter();
+	Rynek rynek = Rynek.getInstance();
+	Optimizer2 optimizer2=Optimizer2.getInstance();
+
+	
+	Prosument2(int ID)
+	{
+		this.ID =ID;
+	}
+	
+	//SETTERS
+	public void setHoryzontCzasowy(int horyzontCzasowy)
+	{
+		this.horyzontCzasowy=horyzontCzasowy;
+	}
+	
+	/*public void setOptimizer(Optimizer optimizer)
+	{
+		this.optimizer =optimizer;
+	}*/
+	
+	public void setOutputFolder(String outputFolder)
+	{
+		this.outputFolder=outputFolder;
+	}
+	public void setMnoznikGeneracji(float value)
+	{
+		this.mnoznikGeneracji=value;
+		
+		if (value>0)
+		{
+			active=true;
+		}
+		
+		int a=0;
+		while (a<dayDataList.size())
+		{
+			dayDataList.get(a).setTrueGeneration(mnoznikGeneracji);
+			a++;
+		}
+	}
+	
+	public void setCenaDystrybutoraZewnetrznego(float value)
+	{
+		this.cenaDystrybutoraZewnetrznego=value;
+	}
+	
+	public void setSimulationEndDateJustDay(String simulationEndDateJustDay)
+	{
+		this.simulationEndDateJustDay=simulationEndDateJustDay;
+	}
+	
+	//GETTERS
+	public int getHoryzontCzasowy()
+	{
+		return this.horyzontCzasowy;
+	}
+	
+	public int getTimeIndex()
+	{
+		return timeIndex;
+	}
+	
+	public String getTransactionFolder()
+	{
+		return transactionFolder;
+	}
+	
+	public int getID()
+	{
+		return this.ID;
+	}
+	
+	public int getTransactionIteration()
+	{
+		return this.transactionIteration;
+	}
+	
+	public float getPojemnoscBaterii()
+	{
+		return this.pojemnoscBaterii;
+	}
+	
+	public float getKosztAmortyzacjiBaterii()
+	{
+		return this.kosztAmortyzacjiBaterii;
+	}
+	
+	public float getCenaDystrybutoraZewnetrznego()
+	{
+		return this.cenaDystrybutoraZewnetrznego;
+	} 
+	
+	public float getPredkoscBaterii()
+	{
+		return this.predkoscBaterii;
+	} 
+	
+	
+	public ArrayList<DayData2> getDayDataList()
+	{
+		return dayDataList;
+	}
+	
+	//ACTIVATE/DISABLE
+	public void aktywujBaterie()
+	{
+		pojemnoscBaterii=pojemnoscBateriiIfEnabled;
+		active=true;
+	}
+	
+	public void disableHandel()
+	{
+		this.handel=false;
+	}
+	
+	float obliczCalkowityRachunek()
+	{
+		float sum=0f;
+		
+		String date ="";
+		int a=0;
+		while(!simulationEndDateJustDay.equals(date))
+		{
+			sum+=dayDataList.get(a).getCost();
+			date=dayDataList.get(a+1).getDay();
+			a++;
+		}
+		return sum;
+	}
+	
+	float obliczCalkowitaKonsumpcje()
+	{
+		float sum=0f;
+		
+		String date ="";
+		int a=0;
+		while(!simulationEndDateJustDay.equals(date))
+		{
+			sum+=dayDataList.get(a).getConsumption();
+			date=dayDataList.get(a+1).getDay();
+			a++;
+		}
+		return sum;
+	}
+	
+	
+	//---------------------------------------------------------------------------
+	//OTHER FUNCTIONS
+	public void createTransactionFolder()
+	{
+		String folderPath =outputFolder+"//Transactions_"+ID;
+		createFolder(folderPath);
+	}
+	
+	void createFolder(String path)
+	{
+		//print("create Folder "+path);
+		//getInput();
+		String newlyCreatedFolder=path;
+		File dir = new File(newlyCreatedFolder);
+		dir.mkdir();
+		transactionFolder=path;
+	}
+	
+	public void resetDayDataListToZero()
+	{
+		int a=0;
+		while (a<dayDataList.size())
+		{
+			dayDataList.get(a).resetDayDataToZero();
+			
+			a++;
+		}
+	}
+	
+	public void createReport()
+	{
+		try {
+			
+			float calkowityKoszt = obliczCalkowityRachunek();
+			float calkowiteZuzycie = obliczCalkowitaKonsumpcje();
+			
+			Writer writer = new FileWriter(outputFolder+"\\"+ID+".csv");
+			writer.write("ID,"+ID+System.lineSeparator());
+			writer.write("Mnoznik,"+mnoznikGeneracji+System.lineSeparator());
+			
+			writer.write("Cena zewnetrzna,"+cenaDystrybutoraZewnetrznego+System.lineSeparator());
+			writer.write("Amortyzacja Baterii,"+kosztAmortyzacjiBaterii+System.lineSeparator());
+			writer.write("Koszt calkowity,"+calkowityKoszt+System.lineSeparator());
+			writer.write("Konsumpcja miesieczna,"+calkowiteZuzycie+System.lineSeparator());
+
+
+			
+			String header1 ="Day,Hour,konsumpcja,Generacja,stanBateriiNaPoczatkuSlotu,stanBateriiNaKoniecSlotu,zBateriiNaKonsumpcje,zBateriiNaRynek";
+			String header2 ="zGeneracjiNaKonsumpcje,zGeneracjiNaRynek,zGeneracjiDoBaterii,zRynekNaKonsumpcje,zRynekDoBaterii,koszt,generacja2"; 
+			
+			writer.write(header1+","+header2+System.lineSeparator());
+
+			String date ="";
+			
+			int a=0;
+			while (!simulationEndDateJustDay.equals(date))
+			{
+				writer.write(dayDataList.get(a).reportString()+","+mnoznikGeneracji*dayDataList.get(a).getGeneration()+System.lineSeparator());
+				date=dayDataList.get(a+1).getDay();
+				a++;
+			}
+		
+			writer.close();
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void tick()
+	{
+		if (timeIndex+1<dayDataList.size())
+		{
+			dayDataList.get(timeIndex+1).setStanBateriiNaPoczatkuSlotu(dayDataList.get(timeIndex).getStanBateriiNaKoniecSlotu());//(dayDataList.get(timeIndex).ge);
+			dayDataList.get(timeIndex+1).setStanBateriiNaKoniecSlotu(dayDataList.get(timeIndex).getStanBateriiNaKoniecSlotu());
+
+		}
+		transactionIteration=0;
+		
+		charge();
+		
+		timeIndex++;
+	}
+	void charge()
+	{
+		dayDataList.get(timeIndex).charge(cenaDystrybutoraZewnetrznego,kosztAmortyzacjiBaterii);
+	}
+	
+	void zaktualizujHandelWithHandel()
+	{
+		print("fill zaktualizujHandelWithHandel up");
+	}
+	
+	void zaktualizujHandelNoHandel()
+	{
+		
+		DayData2 dayData2 = dayDataList.get(timeIndex);
+		
+		float generation = dayData2.getGeneration()*mnoznikGeneracji;
+		
+		if (generation>dayData2.getConsumption())
+		{
+			
+			float generacjaDoBaterii = generation-dayData2.getConsumption();
+			
+			print("generation>consumption");
+			print(((Float)generacjaDoBaterii).toString());			
+			//debugInput();
+			
+			dayData2.setZGeneracjiNaKonsumpcje(dayData2.getConsumption());
+			dayData2.chargeBatteryZGeneracji(generacjaDoBaterii);
+			
+		}
+		else
+		{
+			dayData2.setZGeneracjiNaKonsumpcje(generation);
+			float nieZaspokojonaKonsumpcja = dayData2.getConsumption()-generation;
+			dayData2.dischargeBatteryNaKonsumpcje(nieZaspokojonaKonsumpcja);
+		}
+
+	}
+	
+	public void zaktualizujHandel()
+	{
+		if (handel)
+		{
+			zaktualizujHandelWithHandel();
+		}
+		else
+		{
+			zaktualizujHandelNoHandel();
+		}
+	}
+	
+	public void DayDataDivide(int divider)
+	{
+		int a=0;
+		while (a<dayDataList.size())
+		{
+			dayDataList.get(a).divide(divider);
+			a++;
+		}
+	}
+	
+	public void deepCopyProsument2(Prosument2 p) //used by Aggregator only
+	{
+		dayDataList=new ArrayList<DayData2>();
+		ArrayList<DayData2> L1 = p.getDayDataList();
+		
+		int a=0;
+		while (a<L1.size())
+		{
+			DayData2 d = new DayData2(L1.get(a).getDay(),L1.get(a).getHour(),"0f","0f",200);
+			dayDataList.add(d);
+			a++;
+		}
+		
+		
+		//dayDataList=new ArrayList<DayData2>(p.getDayDataList());
+	}
+	
+	public void loadData(String folderZeZuzyciem, String simulationEndDate) //used by normal prosuments
+	{
+		this.simulationEndDate= simulationEndDate;
+		
+		String[] s22 =simulationEndDate.split(" ");
+		this.simulationEndDateJustDay=s22[0];
+		
+		String plikZeZuzyciem = folderZeZuzyciem+"\\"+ID+".csv";
+		
+        BufferedReader br = null;
+        String line="";
+        
+        Boolean body=false;
+        Boolean endReached=false;
+        
+        //turns falls if end Reached and endCounter==endLimit
+        Boolean continuationFlag=true;
+
+        
+        int endCounter=1;//yes it should be one!
+        
+        //Ile rekordow po osiagnieciu endDate zostanie zassanych. ustaw jako wielokrotnosc 24
+        int endLimit=24*3; 
+
+        
+        
+        try 
+		{
+			  
+			br = new BufferedReader(new FileReader(plikZeZuzyciem));
+			int a=0;
+		    while (((line = br.readLine()) != null) && continuationFlag )
+		    {
+		    	if (body)
+		    	{
+		    		if (endReached)
+		    		{
+		    			endCounter++;
+		    			if (endCounter==endLimit)
+		    			{
+		    				continuationFlag=false;
+		    			}
+		    		}
+		    		else
+		    		{
+		    			String[] s2 = line.split(",");
+
+		    			if (s2[0].equals(simulationEndDate))
+		    			{
+		    				
+		    				endReached=true;
+		    			}
+		    		}
+		    		
+	    			String[] s2 = line.split(",");
+	    			String[] s3= s2[0].split(" ");
+	    			
+	    			DayData2 d = new DayData2(s3[0],s3[1],s2[2],s2[1],ID );
+	    			
+	    			d.setTrueGeneration(mnoznikGeneracji);
+	    			dayDataList.add(d);
+	    			
+	    			//print(line);
+
+		    	}
+		    	else
+		    	{
+		    		if (line.equals("###"))
+					{
+						body=true;
+					}
+		    	}
+		    	
+		    	a++;
+		    }
+        }
+        catch (Exception e)
+        {	
+        	System.out.println(ID+" E! loadData");
+        }
+		
+	}
+	
+	
+	
+	void print(String s)
+	{
+		System.out.println("Prosument2 ID: "+ID+" "+s);
+	}
+	
+
+	
+	public void consistencyCheck()
+	{
+		batteryCapacityConsistencyCheck();
+		batteryChargingSpeedConsistencyCheck();
+	}
+	
+	void batteryCapacityConsistencyCheck()
+	{
+		/*int a=0;
+		while (a<)
+		{
+			a++;
+		}*/
+		
+		String date ="";
+		int a=0;
+		while (!simulationEndDateJustDay.equals(date))
+		{
+			if (dayDataList.get(a).getStanBateriiNaPoczatkuSlotu()>pojemnoscBaterii)
+			{
+				System.out.println("batteryCapacityConsistencyCheck");
+				System.out.println(ID+" "+dayDataList.get(a).getDay()+" "+dayDataList.get(a).getHour());
+				sc.hasNextLine();
+			}
+			//writer.write(dayDataList.get(a).reportString()+","+mnoznikGeneracji*dayDataList.get(a).getGeneration()+System.lineSeparator());
+			date=dayDataList.get(a+1).getDay();
+			a++;
+		}
+	}
+	
+	void batteryChargingSpeedConsistencyCheck()
+	{
+		String date ="";
+		int a=1;
+		while (!simulationEndDateJustDay.equals(date))
+		{
+			if (Math.abs(dayDataList.get(a).getStanBateriiNaPoczatkuSlotu()-dayDataList.get(a-1).getStanBateriiNaPoczatkuSlotu())>predkoscBaterii)
+			{
+				System.out.println("batteryChargingSpeedConsistencyCheck");
+				System.out.println(ID+" "+dayDataList.get(a).getDay()+" "+dayDataList.get(a).getHour());
+				sc.hasNextLine();
+			}
+			//writer.write(dayDataList.get(a).reportString()+","+mnoznikGeneracji*dayDataList.get(a).getGeneration()+System.lineSeparator());
+			date=dayDataList.get(a+1).getDay();
+			a++;
+		}
+	}
+	
+	public void takePriceVector(ArrayList<Float> priceVector)
+	{
+		//getInputID("takePriceVector");
+		
+		
+		DayData2 d =dayDataList.get(timeIndex);
+		float stanPoczatkowyBaterii=d.getStanBateriiNaPoczatkuSlotu();
+		
+		
+		ArrayList<DayData2> sterowanieForPriceVector;
+
+		if (active)
+		{	
+			sterowanieForPriceVector =optimizer2.wyznaczSterowanie(priceVector,this);
+		}
+		else
+		{
+			sterowanieForPriceVector =wyznaczSterowanieDlaPasywnegoProsumenta();
+		}
+		
+		Point p1 = getPunktFunkcjiUzytecznosci(sterowanieForPriceVector,priceVector);
+		rynek.addPricePoint(this,p1);
+
+	}
+	
+	//price vector ma postac (0) -mniejsza cena dla najblizszego slotu, (1) -normlana, (2) -wieksza
+	public void takeFirstPriceVector(ArrayList<ArrayList<Float>> ListOfPriceVectors)
+	{
+		Point p1 = null;
+		Point p2 = null;
+		Point p3 = null;
+		
+		ArrayList<Float> priceVector = ListOfPriceVectors.get(1);
+		
+		ArrayList<Float> priceVectorSmallerMod= ListOfPriceVectors.get(0);
+		ArrayList<Float> priceVectorBiggerMod= ListOfPriceVectors.get(2);
+		
+		
+		//float smallerPriceValue=(priceVectorSmallerMod.get(0)+cenaMinimalnaNaRynkuLokalnym)/2;
+		//priceVectorSmallerMod.set(0, smallerPriceValue);
+
+		//float biggerPriceValue=(priceVectorBiggerMod.get(0)+cenaMaksymalnaNaRynkuLokalnym)/2;
+		//priceVectorBiggerMod.set(0, biggerPriceValue);
+		
+		if (active)
+		{		
+
+			DayData2 d =dayDataList.get(timeIndex);
+			float stanPoczatkowyBaterii=d.getStanBateriiNaPoczatkuSlotu();
+
+			
+			ArrayList<DayData2> sterowanieForPriceVector =optimizer.wyznaczSterowanie2(priceVector,horyzontCzasowy,this,stanPoczatkowyBaterii);
+			ArrayList<DayData2> sterowanieForpriceVectorSmallerMod =optimizer2.wyznaczSterowanie(priceVectorSmallerMod,this);
+			ArrayList<DayData2> sterowanieForPriceVectorBiggerMod =optimizer2.wyznaczSterowanie(priceVectorBiggerMod,this);
+
+			
+			reporter.createSterowanieReport(sterowanieForPriceVector,this,"",priceVector);
+			reporter.createSterowanieReport(sterowanieForpriceVectorSmallerMod,this,"smaller",priceVectorSmallerMod);			
+			reporter.createSterowanieReport(sterowanieForPriceVectorBiggerMod,this,"bigger",priceVectorBiggerMod);
+			
+			p1 = getPunktFunkcjiUzytecznosci(sterowanieForPriceVector,priceVector);
+			p2 = getPunktFunkcjiUzytecznosci(sterowanieForpriceVectorSmallerMod,priceVectorSmallerMod);
+			p3 = getPunktFunkcjiUzytecznosci(sterowanieForPriceVectorBiggerMod,priceVectorBiggerMod);
+			
+			/*printID(p1.toString());
+			printID(p2.toString());
+			printID(p3.toString());
+			
+			getInput();*/
+			
+
+		}
+		else
+		{
+			ArrayList<DayData2> sterowaniePasywnegoProsumenta =wyznaczSterowanieDlaPasywnegoProsumenta();
+			p1 = getPunktFunkcjiUzytecznosci(sterowaniePasywnegoProsumenta,priceVector);
+			p2 = getPunktFunkcjiUzytecznosci(sterowaniePasywnegoProsumenta,priceVectorSmallerMod);
+			p3 = getPunktFunkcjiUzytecznosci(sterowaniePasywnegoProsumenta,priceVectorBiggerMod);
+		}
+		
+		rynek.addPricePoint(this,p1);
+		rynek.addPricePoint(this,p2);
+		rynek.addPricePoint(this,p3);
+		
+		
+	}
+	
+	ArrayList<DayData2> wyznaczSterowanieDlaPasywnegoProsumenta()
+	{
+		ArrayList<DayData2> L1 = new ArrayList<DayData2>();
+		DayData2 d =new DayData2();
+		
+		float konsumpcja = dayDataList.get(timeIndex).getConsumption();
+		
+		d.setKupuj(1);
+		
+		d.setZBateriiNaRynek(0f);
+		d.setZGeneracjiNaRynek(0f);
+		
+		d.setZRynekDoBaterii(0f);
+		d.setZBateriiNaKonsumpcje(konsumpcja);
+
+		L1.add(d);
+		
+		return L1;
+	}
+	
+	public void getKontrakt(ArrayList<Float> priceVector, DayData2 constainMarker)
+	{	
+		if (active)
+		{
+			/*
+			print(constainMarker.getKupuj()+"");
+			print(constainMarker.getConsumption()+"");
+			print(constainMarker.getGeneration()+"");
+			getInput("");*/
+			
+			ArrayList<DayData2> dList =optimizer2.wyznaczSterowanie(priceVector, this, constainMarker);
+			dayDataList.set(timeIndex, dList.get(0));
+
+		}
+		else
+		{
+			float nabytaEnergia = constainMarker.getConsumption();
+			DayData2 d =dayDataList.get(timeIndex);
+
+			nabytaEnergia = Math.min(nabytaEnergia,d.getConsumption());
+			d.setZRynekNaKonsumpcje(nabytaEnergia);
+			dayDataList.set(timeIndex, d);
+			
+			
+		}
+		getInputID("getKontrakt -end");
+
+
+	}
+	
+	Point getPunktFunkcjiUzytecznosci(ArrayList<DayData2> L1, ArrayList<Float> priceVector)
+	{
+		Point point = new Point();
+		
+		point.setPrice(priceVector.get(0));
+		
+		DayData2 d =L1.get(0);
+		
+		float sprzedaz = d.getZBateriiNaRynek()+d.getZGeneracjiNaRynek();
+		float kupno = d.getZRynekDoBaterii()+d.getZRynekNaKonsumpcje();
+		
+		float wolumenEnergii;
+		
+		if (d.getKupuj()>0)
+		{
+			wolumenEnergii=kupno;
+		}
+		else
+		{
+			wolumenEnergii=-sprzedaz;
+
+		}
+		point.setIloscEnergiiDoKupienia(wolumenEnergii);
+		
+		return point;
+	}
+	
+	
+	
+	public ArrayList<DayData2> getDayDataListInT (int horyzont)
+	{
+		ArrayList<DayData2> L1= new ArrayList<DayData2>();
+		
+		int a=0;
+		while (a<horyzont)
+		{
+			L1.add(dayDataList.get(a+timeIndex));
+			a++;
+		}
+		
+		return L1;
+	}
+	
+	void getInput(String s)
+	{
+		print("getInput "+s);
+		sc.nextLine();
+	}
+	
+	void getInput()
+	{
+		getInput("");
+	}
+	
+	void getInputID(String s)
+	{
+		if (ID ==1)
+		{
+			getInput(s);
+		}
+	}
+	
+	void printID(String s)
+	{
+		if (ID ==1)
+		{
+			print(s);
+		}
+	}
+}

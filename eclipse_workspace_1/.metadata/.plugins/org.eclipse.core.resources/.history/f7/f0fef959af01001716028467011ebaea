@@ -1,0 +1,173 @@
+package symulacja2;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class Reporter {
+	
+	Scanner sc = new Scanner (System.in);
+	float reallySmallNumber = 0.00000001f;
+	
+	boolean enableSterowanieReport=false;
+
+	void createSterowanieReportBody(ArrayList<DayData2> sterowanieForPriceVector, Prosument2 prosument,String additionalText, ArrayList<Float> priceVector)
+	{
+		
+	};
+	
+	public void createSterowanieReport(ArrayList<DayData2> sterowanieForPriceVector, Prosument2 prosument,String additionalText, ArrayList<Float> priceVector)
+	{
+		if (enableSterowanieReport)
+		{
+			
+		}
+		
+		ArrayList<DayData2> L1 = prosument.getDayDataList();
+		
+		int timeIndex = prosument.getTimeIndex();
+		DayData2 d = L1.get(timeIndex);
+		
+		if (!additionalText.equals(""))
+		{
+			additionalText="_"+additionalText;
+		}
+		
+		
+		String fileName =d.getDay()+"_"+d.getHour().replace(":", "")+"_"+prosument.getTransactionIteration()+additionalText;
+		String path2 = prosument.getTransactionFolder()+"\\"+fileName+".csv";
+		
+		
+		try {
+			Writer writer = new FileWriter(path2);
+			
+			writer.write("ID,"+prosument.getID()+System.lineSeparator());
+			writer.write("Day,"+d.getDay()+System.lineSeparator());
+			writer.write("Hour,"+d.getHour()+System.lineSeparator());
+			writer.write("Iteration,"+prosument.getTransactionIteration()+System.lineSeparator());
+			
+			writer.write(""+System.lineSeparator());
+
+			String header1 ="Day,Hour,konsumpcja,Generacja(true),stanBateriiNaPoczatkuSlotu,zBateriiNaKonsumpcje,zBateriiNaRynek";
+			String header2 ="zGeneracjiNaKonsumpcje,zGeneracjiNaRynek,zGeneracjiDoBaterii,zRynekNaKonsumpcje,zRynekDoBaterii,price,kupuj"; 
+			
+			writer.write(header1+","+header2+System.lineSeparator());
+
+			
+			
+			int a=0;
+			while (a<priceVector.size())
+			{
+				d = L1.get(timeIndex+a);
+				DayData2 sterowanie=sterowanieForPriceVector.get(a);
+				
+				String row=stringSeries(d.getDay(),d.getHour(),""+d.getConsumption(),""+d.getTrueGeneration(),""+sterowanie.getStanBateriiNaPoczatkuSlotu()+",");
+				String row2 =stringSeries(sterowanie.getZBateriiNaKonsumpcje()+"",sterowanie.getZBateriiNaRynek()+",");
+				String row3 =stringSeries(""+sterowanie.getZGeneracjiNaKonsumpcje(),""+sterowanie.getZGeneracjiNaRynek(),""+sterowanie.getZGeneracjiDoBaterii()+",");
+				String row4 =stringSeries(""+sterowanie.getZRynekNaKonsumpcje(),""+sterowanie.getZRynekDoBaterii(),""+priceVector.get(a),""+sterowanie.getKupuj());
+				
+				row=eToZero(row);
+				row2=eToZero(row2);
+				row3=eToZero(row3);
+				row4=eToZero(row4);
+						
+				row=stringSeries(row,row2,row3,row4);
+				writer.write(row+System.lineSeparator());
+				
+				
+				a++;
+			}
+					
+			writer.close();
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+	
+	String eToZero(String s)
+	{
+		String output="";
+		String[] s2 = s.split(",");
+		int a=0;
+		while (a<s2.length)
+		{
+			if (a>0)
+			{
+				output=output+",";
+			}
+			String s32 =s2[a];
+			
+			if (s32.contains("E"))
+			{
+				s32="0.0";
+			}
+			
+			output=output+s32;
+			a++;
+		}
+		
+		return output;
+	}
+	
+	String floatListToString(ArrayList<Float> L1)
+	{
+		String s="";
+		int a=0;
+		while (a<L1.size())
+		{
+			if (a>0)
+			{
+				s=s+",";
+			}
+			
+			s=s+L1.get(a);
+			a++;
+		}
+		
+		return s;
+	}
+	
+	String stringSeries(String... args)
+	{
+		String s="";
+		
+		int a=0;
+		while (a<args.length)
+		{
+			if (a>0)
+			{
+				s=s+",";
+			}
+			s=s+args[a];
+			a++;
+		}
+		
+		return s;
+	}
+	
+	void print(int a)
+	{
+		print(((Integer)a).toString());
+	}
+	
+	void print(String s)
+	{
+		System.out.println("Reporter "+s);
+	}
+	
+	void getInput(String s)
+	{
+		print("getInput "+s);
+		sc.nextLine();
+	}
+	
+	void getInput()
+	{
+		getInput("");
+	}
+}
