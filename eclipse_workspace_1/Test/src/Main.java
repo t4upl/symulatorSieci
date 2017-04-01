@@ -1,3 +1,7 @@
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -6,13 +10,48 @@ public class Main {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		
-		//int[] s1 ={1, 2, 3, 4, 5, 6, 7, 3, 8, 9, 2, 10};
-		//int[] s2={3, 2, 7, 12, 3, 9, 5, 2};
+
+		BufferedReader br = null;
+		FileReader fr = null;
 		
-		int[] s1 ={4, 7, 1, 6, 9, 2, 3, 1};
-		int[] s2 ={};
-		
-		arraysMatching(s1,s2);
+		String FILENAME ="C:\\Users\\Administrator\\Desktop\\hi.txt";
+
+		try {
+
+			fr = new FileReader(FILENAME);
+			br = new BufferedReader(fr);
+
+			String sCurrentLine;
+
+			br = new BufferedReader(new FileReader(FILENAME));
+
+			while ((sCurrentLine = br.readLine()) != null) {
+				System.out.println(sCurrentLine);
+			}
+			
+			br.close();
+			
+			//open once more
+			br = new BufferedReader(new FileReader(FILENAME));
+
+			while ((sCurrentLine = br.readLine()) != null) {
+				System.out.println(sCurrentLine);
+			}
+			
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (br != null)
+					br.close();
+				if (fr != null)
+					fr.close();
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
+
+		}
 		
 		
 	}

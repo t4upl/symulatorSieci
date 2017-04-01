@@ -234,7 +234,6 @@ public class LokalneCentrum extends CoreClass {
 		int a=0;
 		while(a<hourList.size())
 		{
-			print(hourList.get(a));
 			
 			simulationStep();				
 			a++;
@@ -245,12 +244,12 @@ public class LokalneCentrum extends CoreClass {
 	void simulationStep()
 	{
 		
-		//print ("simualtion step "+hourList.get(timeIndex));
+		print ("simualtion step "+hourList.get(timeIndex));
 		
 		//Zeby byl jakis output keidy symualcja dziala
 		if (timeIndex%4==0)
 		{
-			print ("simualtion step "+hourList.get(timeIndex));
+			print ("simualtion step "+hourList.get(timeIndex)+" #");
 		}
 		
 		if (handel)

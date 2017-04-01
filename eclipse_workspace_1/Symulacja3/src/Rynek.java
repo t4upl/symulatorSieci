@@ -30,7 +30,7 @@ public class Rynek extends CoreClass {
 	//limit iteracji rynek -podjae cene, prosument odpowiada
 	//w sklad limitu nie whchodzi pierwsza cena (podanie 3 predykcji)
 	final int limitIteracji=Stale.limitIteracji;
-	final int limitIteracjiBisekcji=Stale.limitBisekcji;
+	//final int limitIteracjiBisekcji=Stale.limitBisekcji;
 	
 	//SYSTEM
 	//keeps track of data for reporting
@@ -55,9 +55,7 @@ public class Rynek extends CoreClass {
 	//wykonaj akcje pod koniec symulacji
 	public void endOfSimulation()
 	{
-		//print("dOPISZ!");
 		rynekHistory.createFirstPriceVSFinalPriceReport();
-		//reporter.reportPierwszeCeny(historyDeclaredPrice, historyFinalPrice, historyWolumenHandlu);
 	}
 	
 	//-----------------------
@@ -205,13 +203,14 @@ public class Rynek extends CoreClass {
 			{
 				if (point.getPrice()<pointList.get(a).getPrice())
 				{
-					
+					//jezeli a>0 to przestaw alfe i bete poprzednikowi dodawanego punktu
 					if (a>0)
 					{
-						updateAlfa(pointList.get(a-1),point,prosument,pointList);
+						updateAlfa(pointList.get(a-1),point,prosument,pointList,"poprzednik dodawanego punktu");
 					}
 					
-					updateAlfa(point,pointList.get(a),prosument,pointList);
+					//ustaw alfe i bete dodawanego punktu
+					updateAlfa(point,pointList.get(a),prosument,pointList,"dodawany punkt");
 					pointList.add(a, point);
 					notFound=false;	
 				}	
@@ -220,7 +219,7 @@ public class Rynek extends CoreClass {
 			
 			if (notFound)
 			{
-				updateAlfa(pointList.get(pointList.size()-1),point,prosument, pointList);
+				updateAlfa(pointList.get(pointList.size()-1),point,prosument, pointList,"not found");
 				pointList.add(point);
 			}
 		}
@@ -264,20 +263,39 @@ public class Rynek extends CoreClass {
 
 	public void updateAlfa(Point p1, Point p2, Prosument prosument, ArrayList<Point> pointList)
 	{
-		float alfa = p1.getIloscEnergiiDoKupienia()-p2.getIloscEnergiiDoKupienia();
-		alfa = alfa / (p1.getPrice()-p2.getPrice());
+		updateAlfa(p1, p2, prosument, pointList,"");
+	}
+
+	
+	//p2 - nastepnik w sensie ceny , p1
+	public void updateAlfa(Point p1, Point p2, Prosument prosument, ArrayList<Point> pointList,String note)
+	{
+		float roznicaEnergii = p1.getIloscEnergiiDoKupienia()-p2.getIloscEnergiiDoKupienia();
+		float roznicaCen = (p1.getPrice()-p2.getPrice());
+		float alfa = roznicaEnergii / roznicaCen;
 		
 		float beta = p1.getIloscEnergiiDoKupienia()-alfa * p1.getPrice();
 		
+		//sprawdza sensownosc
 		if (alfa > Stale.malaLiczba)
 		{
+			
+			
+			print ("-----------\nalfa error start\n");
 			print("\nERROR\n-----------------");
+			print ("Wraz ze wzrastjaaca cena chec nabywcza powinna spadac => alfa mniejsza rowna zero");
+			print("Roznica energii "+roznicaEnergii+" POWINNA BYC WIEKSZA OD ZERA");
+			print("roznicaCen "+roznicaCen+" POWINNA BYC MNIEJSZA OD ZERA");
 			print("\nprosument ID: "+prosument.getID());
+			print("NOTE "+note);
 			print("alfa "+alfa);
 			print("iteration "+iteracja);
 			
-			print ("\np1 "+p1.toString());
-			print ("\np2 "+p2.toString());
+			print("\n");
+
+			
+			print ("\np1 "+p1.toString()+"\n");
+			print ("\np2 "+p2.toString()+"\n");
 			print ("\n\n"+pointListToString(pointList));
 			getInput("updateAlfa - error");
 			
@@ -366,7 +384,6 @@ public class Rynek extends CoreClass {
 		if (iteracja<limitIteracji)
 		{	
 			float cena =wyznaczCene();
-			//print (cena);
 			
 			//spreparuj vector cen
 			ArrayList<Float> priceVector = new ArrayList<Float> (priceVectorsList.get(priceVectorsList.size()-1));
@@ -427,12 +444,94 @@ public class Rynek extends CoreClass {
 	{
 		if (Stale.scenariusz<100)
 		{
-			return wyznaczCeneActual2(false);
+			return wyznaczCeneActual3(false);
 		}
 		else
 		{
-			return wyznaczCeneActual2(true);
+			return wyznaczCeneActual3(true);
 		}
+	}
+	
+	//TODO
+	
+	float wyznaczCeneActual3(Boolean debug)
+	{
+		
+		//wszystkie ceny sa tkaie same wiec mozna wziac pierwszego prosumenta i od neigo pobrac cene
+		ArrayList<Point> L1 =listaFunkcjiUzytecznosci.get(0);
+		
+		float leftBound = L1.get(0).getPrice();
+		float rightBound = L1.get(L1.size()-1).getPrice();
+		
+		
+		//wyznacz zbior punktow dla ktorych cena minimalna jest najmniejsza 
+		
+		//zbiot probek - cena i funckja Rynkowa
+		ArrayList<Point> zbiorProbek = new ArrayList<>();
+		
+		//zbior probke przyjmujacych najwyzsza warotsc
+		ArrayList<Point> zbiorMaxProbek = new ArrayList<>();
+		
+		float MaxValue=-1;
+		int i=0;
+		
+		float step = (rightBound-leftBound)/Stale.iloscRownomiernychPodzialow;
+		float cenaContender =leftBound;
+		while (cenaContender<=rightBound)
+		{
+			Point p = funkcjaRynku2(cenaContender);
+			
+			//ilosc energii przehcowuje indeks
+			p.setIloscEnergiiDoKupienia(i);
+			zbiorProbek.add(p);
+			
+			//w pierwszej tieracji zawsze uznaj ze pierwsza wartosc jest najwieksza
+			if (cenaContender ==leftBound)
+			{
+				MaxValue = p.getBeta();
+				zbiorMaxProbek.add(p);
+			}
+			
+			//jezeli wartosc funkcji rynku jest wieksza niz max to zrob max z obecnej i zainicjuj nowa liste
+			if (MaxValue < p.getBeta())
+			{
+				MaxValue = p.getBeta();
+				zbiorMaxProbek.clear();
+				zbiorMaxProbek.add(p);
+			}
+			else
+			{
+				if (MaxValue == p.getBeta())
+				{
+					zbiorMaxProbek.add(p);
+				}
+				//jezlei funckja 
+			}
+			
+			cenaContender +=step;
+		}
+	
+		
+		//Wyznacz cene
+		int kierunekZmian =(int)zbiorMaxProbek.get(0).getAlfa();
+		
+		float finalnaCena;
+		
+		//jezeli kierunek zmian >0 to przeaga kupujacych czyli podwyz cene
+		//wez ostatnia cyfre z listy
+		if (kierunekZmian>0)
+		{
+			finalnaCena = zbiorMaxProbek.get(zbiorMaxProbek.size()-1).getPrice();
+		}
+		else
+		{
+			finalnaCena = zbiorMaxProbek.get(0).getPrice();
+		}
+		
+		
+		//getInput("wyznaczCeneActual3 -wait");
+		
+		return finalnaCena;
 	}
 	
 	float wyznaczCeneActual2(Boolean debug)
@@ -516,6 +615,35 @@ public class Rynek extends CoreClass {
 		}
 		
 		return Math.min(sumaKupna,-sumaSprzedazy);
+	}
+	
+	
+	//zwraca punkt postaci
+	//cena -cena
+	//alfa  - przewaga 1 - kupujacych, -1 sprzedajacych
+	//beta wartosc funkcji rynku
+	Point funkcjaRynku2(float cena)
+	{
+		Point p =new Point();
+		p.setPrice(cena);
+		
+		//ustala index dla ktorego point.cena <cena i jest to anjwiekszy tkai indeks
+		int priceIndex = funkcjaRynkuGetIndex(cena);
+		
+		//suma powinna byc ujemna, bo chec sprzedazy w punktach ejst rpzetryzmywnaa jako lcizby ujemne
+		float sumaSprzedazy = funkcjaRynkuSumaSprzedazy(priceIndex,cena);
+		float sumaKupna = funkcjaRynkuSumaKupna(priceIndex,cena);
+		
+		p.setAlfa(1);
+		
+		if (-sumaSprzedazy>sumaKupna)
+		{
+			p.setAlfa(-1);
+		}
+		
+		p.setBeta(Math.min(sumaKupna,-sumaSprzedazy));
+		
+		return p;
 	}
 	
 	/*
@@ -802,7 +930,7 @@ public class Rynek extends CoreClass {
 		float sumaSprzedazy = 0f;
 		
 		//wybierz taka cene zeby funkcja rynku dazyla do zera
-		float cena = znajdzOstatecznaCene();
+		float cena = znajdzOstatecznaCene2();
 		
 		ArrayList<Float> priceVector = priceVectorsList.get(priceVectorsList.size()-1);
 		priceVector.set(0, cena);
@@ -988,6 +1116,56 @@ public class Rynek extends CoreClass {
 		//getInput("znajdzOstatecznaCene - nto finished");
 		return minimuCena;
 		
+	}
+	
+	float znajdzOstatecznaCene2()
+	{
+		//wszystkie ceny jakie byly oglaszan ne na najblizszy slot w 
+		ArrayList<Float> cenyNaNajblizszySlot =znajdzOstatecznaCeneCenaNaNajblizszeSloty();
+		
+		float minimuCena =-1;
+		
+		//Stworzenie cen w raportowaniu
+		int i=0;
+		while (i<cenyNaNajblizszySlot.size())
+		{
+			rynekHistory.kontraktDodajCene(cenyNaNajblizszySlot.get(i));
+			i++;
+		}
+		
+		//wyznacz liste ktora ma najwieksza wartosc funkcji rynkowej
+		
+		ArrayList<Float> cenyZNajwiekszaFunkcjaRynkowa = new ArrayList<>();
+		float maximumFunkcjiRynkowej=-1;
+		
+		i=0;
+		while (i<cenyNaNajblizszySlot.size())
+		{
+			float cena  =cenyNaNajblizszySlot.get(i);
+			float value =funkcjaRynku2(cena, false,true);			
+
+			rynekHistory.kontraktDodajWartoscFunkcjiRynku(value, cena);
+
+			
+			if (value>maximumFunkcjiRynkowej)
+			{
+				cenyZNajwiekszaFunkcjaRynkowa.clear();
+				cenyZNajwiekszaFunkcjaRynkowa.add(cena);
+				maximumFunkcjiRynkowej = value;
+			}
+			else if (value==maximumFunkcjiRynkowej)
+			{
+				cenyZNajwiekszaFunkcjaRynkowa.add(cena);
+			} 
+			
+			
+			i++;
+		}
+		
+		minimuCena = cenyZNajwiekszaFunkcjaRynkowa.get(cenyZNajwiekszaFunkcjaRynkowa.size()/2);
+		
+		return minimuCena;
+
 	}
 	
 	int rozpiszKontraktyGetIndex(float cena)

@@ -134,6 +134,7 @@ public class Reporter extends CoreClass {
 		Path pathAsPath = Paths.get(path);
 		if (!Files.exists(pathAsPath))
 		{
+			print("Failure to create "+path);
 			getInput("createFolder - couldnt cretae Folder");
 		}
 		

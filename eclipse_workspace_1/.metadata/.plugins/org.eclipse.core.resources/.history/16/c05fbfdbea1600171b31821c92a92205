@@ -1,0 +1,43 @@
+import java.util.ArrayList;
+import java.util.Arrays;
+
+public class Corelation {
+
+	ArrayList<Float> x = new ArrayList<Float>();
+	ArrayList<Float> y = new ArrayList<Float>();
+	ArrayList<Float> xx = new ArrayList<Float>();
+	ArrayList<Float> yy = new ArrayList<Float>();
+	
+/*
+	1 	43 	99 	4257 		
+	2 	21 	65 	1365 		
+	3 	25 	79 	1975 		
+	4 	42 	75 	3150 		
+	5 	57 	87 	4959 		
+	6 	59 	81 	4779*/
+	
+	//test from http://www.statisticshowto.com/how-to-compute-pearsons-correlation-coefficients/
+	public void test()
+	{
+		x = (ArrayList<Float>) Arrays.asList(43f,21f,25f,42f,57f,59f);
+		y = (ArrayList<Float>) Arrays.asList(99f,65f,79f,75f,87f,81f);
+	}
+	
+	public void run()
+	{
+		float Ex=0;
+		float Ey=0;
+		
+		int i=0;
+		while(i<x.size()){
+			
+			xx.add(x.get(i)*x.get(i));
+			yy.add(y.get(i)*y.get(i));
+			i++;
+		}
+		
+		
+	};
+	
+	
+}
