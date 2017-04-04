@@ -420,6 +420,19 @@ public class Prosument extends CoreClass {
 			float generacjaDoBaterii = generation-dayData2.getConsumption();
 			
 			dayData2.setZGeneracjiNaKonsumpcje(dayData2.getConsumption());
+			
+			/*
+			if (LokalneCentrum.getCurrentDay().equals("2015-06-06") && LokalneCentrum.getCurrentHour().equals("15:00"))
+			{
+				print(1.0f);
+				print(generation);
+				print(consumption);
+				print(generacjaDoBaterii);
+				print(predkoscBaterii);
+				print(pojemnoscBaterii);
+				getInput("hello");
+			}*/
+			
 			dayData2.chargeBatteryZGeneracji(generacjaDoBaterii,predkoscBaterii,pojemnoscBaterii);
 			
 		}

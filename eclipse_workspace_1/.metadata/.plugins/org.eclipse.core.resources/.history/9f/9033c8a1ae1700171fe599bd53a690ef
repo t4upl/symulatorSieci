@@ -1,0 +1,54 @@
+
+public class Loader {
+	//Singleton shit
+	private static Loader instance = null;
+	private Loader() 
+	{
+	}
+	
+	public static Loader getInstance() {
+	      if(instance == null) {
+	         instance = new Loader();
+	      }
+	      return instance;
+	}
+	
+	public void loadPrices()
+	{
+		BufferedReader br = null;
+		try {
+			br = new BufferedReader(new FileReader(path));
+			String line;
+			while ((line=br.readLine())!=null)
+			{
+				if (line.equals(seperator))
+				{
+					isMainSection=true;
+				}
+				
+				if (isMainSection)
+				{
+					counter++;
+					//bo header
+					
+					if (counter>2)
+					{
+						//print(line);
+						String[] s2 = line.split(",");
+						x.add(Float.parseFloat(s2[predykcjaIndeks]));
+						y.add(Float.parseFloat(s2[finalnaIndeks]));
+
+					}
+				}
+				
+				//print(line);
+			}
+			
+			br.close();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			print("read problem");
+			e.printStackTrace();
+		}
+	}
+}

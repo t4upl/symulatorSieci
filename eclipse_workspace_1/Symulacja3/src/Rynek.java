@@ -17,6 +17,10 @@ public class Rynek extends CoreClass {
 	//nie zawiera predykcji dla cen z zakresu dostpenych cen (ceny minimalnej i maksymlanej) 
 	private ArrayList<ArrayList<Float>> priceVectorsList;
 	
+	//wczytana z pliku lista pierwszych cen podawanych w kolejnych iteracjach 
+	//uzywane tylko gdy Stale.cenyZGeneratora =false
+	private ArrayList<Float> listaCenWczytanaZPliku=new ArrayList<Float>(); 
+	
 	
 	//uzywana do ograniczenia ilosci komunikatow miedzy rynkiem a prosumentami
 	int iteracja;
@@ -35,8 +39,9 @@ public class Rynek extends CoreClass {
 	//SYSTEM
 	//keeps track of data for reporting
 	RynekHistory rynekHistory =RynekHistory.getInstance();
-
 	ListaProsumentowWrap listaProsumentowWrap = ListaProsumentowWrap.getInstance();
+	Loader loader = Loader.getInstance();
+	
 	
 	//Singleton shit
 	private static Rynek instance = null;
@@ -47,6 +52,8 @@ public class Rynek extends CoreClass {
    public static Rynek getInstance() {
 	      if(instance == null) {
 	         instance = new Rynek();
+	         instance.inicjalizujRynek();
+	         
 	      }
 	      return instance;
 	}
@@ -67,6 +74,18 @@ public class Rynek extends CoreClass {
 		return this.iteracja;
 	}
 	
+	//TODO
+	//--------------------------
+	
+	//wywolywane przy getInstance() pobrnaiu instancji gdy instnacja==null
+	//musi byc public bo wolane przez funkcje statyczna na rzecz nowostowrzonej isntancji
+	public void inicjalizujRynek()
+	{
+		if (!Stale.cenyZGeneratora)
+		{
+			listaCenWczytanaZPliku=loader.loadPrices();
+		}
+	}
 	
 	//Odpalanae na poczatku kazdego simulationStepu
 	public void reset()
@@ -102,11 +121,56 @@ public class Rynek extends CoreClass {
 		}
 		else
 		{
+			ArrayList<Float> proposedPriceVector = pierwszaPredykcjaWezPredykcjeZListy();
+			
+			//jezeli brakuje elementow w plikyu do pelnej predykcji an horyzont czasowy to uuzplenij dnaymi z modelu
+			if (proposedPriceVector.size()<Stale.horyzontCzasowy)
+			{
+				ArrayList<Float> listaSumarycznejGeneracji = listaProsumentowWrap.getListaSumarycznejGeneracji(LokalneCentrum.getTimeIndex());
+				ArrayList<Float> listaSumarycznejKonsumpcji = listaProsumentowWrap.getListaSumarycznejKonsumpcji(LokalneCentrum.getTimeIndex());
+				ArrayList<Float> cenyZmodelu =predictPrice(listaSumarycznejGeneracji,listaSumarycznejKonsumpcji);
+				
+				proposedPriceVector = polaczListy(proposedPriceVector, cenyZmodelu);
+				
+				if (proposedPriceVector.size()!=Stale.horyzontCzasowy)
+				{
+					getInput("ERROR in pierwszaPredykcjaNormal");
+				}
+			}
+			
+			return proposedPriceVector;
 			//podaj predykcje taka jak wynika z podanego pliku
-			getInput("Fill this part out - wczytaj rpedykcje z pliku!");
-			return new ArrayList<Float>();
+			//getInput("Fill this part out - wczytaj rpedykcje z pliku!");
+			//return new ArrayList<Float>();
+		}
+	}
+	
+	//dopisyuwanie zawsze do L1
+	ArrayList<Float> polaczListy (ArrayList<Float> L1, ArrayList<Float> L2)
+	{
+		int i=L1.size();
+		while(i<Stale.horyzontCzasowy)
+		{
+			L1.add(L2.get(i));
+			i++;
 		}
 		
+		return L1;
+	}
+	
+	//tworzy list edlugosci Stale.horyzont czasowy z wczytanych danych przyjmujac za pierwszy element
+	ArrayList<Float> pierwszaPredykcjaWezPredykcjeZListy()
+	{
+		ArrayList<Float> L1 = new ArrayList<Float>();
+		
+		int i=0;
+		while (i<Stale.horyzontCzasowy && (LokalneCentrum.getTimeIndex()+i)<listaCenWczytanaZPliku.size())
+		{
+			L1.add(listaCenWczytanaZPliku.get(LokalneCentrum.getTimeIndex()+i));
+			i++;
+		}
+		
+		return L1;
 	}
 	
 	
@@ -290,6 +354,11 @@ public class Rynek extends CoreClass {
 			print("NOTE "+note);
 			print("alfa "+alfa);
 			print("iteration "+iteracja);
+			print("time "+LokalneCentrum.getCurrentDay()+" "+LokalneCentrum.getCurrentHour());
+			print("time index "+LokalneCentrum.getTimeIndex());
+			print("Scenariusz" +Stale.scenariusz);
+			print("Ceny z generatora" +Stale.cenyZGeneratora);
+			
 			
 			print("\n");
 

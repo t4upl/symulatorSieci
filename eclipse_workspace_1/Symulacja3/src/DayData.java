@@ -1,5 +1,5 @@
 
-public class DayData {
+public class DayData extends CoreClass {
 
 	private String day;
 	private String hour;
@@ -259,6 +259,15 @@ public class DayData {
 		float trzeciSkladnik =cenaNaLokalnymRynku*zRynekNaKonsumpcje;
 		float czwartySkladnik = kosztAmortyzajcjiBaterii*zGeneracjiDoBaterii;
 		float piatySkladnik=cenaNaLokalnymRynku*(zBateriiNaRynek+zGeneracjiNaRynek);
+		
+		/*
+		//to sprawdzalo czy wszysyc prosumenci maja  te same cene lokalna => maja
+		if (LokalneCentrum.getTimeIndex()==21)
+		{
+			print ("charge "+cenaNaLokalnymRynku);
+			getInput();
+			
+		}*/
 		
 		cost =pierwszySkładnik+drugiSkładnik+trzeciSkladnik+czwartySkladnik-piatySkladnik;
 	}

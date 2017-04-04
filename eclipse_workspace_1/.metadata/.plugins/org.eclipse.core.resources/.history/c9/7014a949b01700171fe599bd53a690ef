@@ -1,0 +1,41 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+
+public class Loader extends CoreClass {
+	//Singleton shit
+	private static Loader instance = null;
+	private Loader() 
+	{
+	}
+	
+	public static Loader getInstance() {
+	      if(instance == null) {
+	         instance = new Loader();
+	      }
+	      return instance;
+	}
+	
+	public void loadPrices()
+	{
+		String path = Stale.folderZDanymi;
+		
+		print(path);
+		getInput("loadPrices");
+		
+		BufferedReader br = null;
+
+			br = new BufferedReader(new FileReader(path));
+			String line;
+			while ((line=br.readLine())!=null)
+			{
+			}
+				
+				
+				//print(line);
+			
+			
+			br.close();
+		}
+
+	}
+}

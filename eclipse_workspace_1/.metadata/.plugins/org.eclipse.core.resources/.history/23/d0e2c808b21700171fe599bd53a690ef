@@ -1,0 +1,59 @@
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.util.ArrayList;
+
+public class Loader extends CoreClass {
+	//Singleton shit
+	private static Loader instance = null;
+	private Loader() 
+	{
+	}
+	
+	public static Loader getInstance() {
+	      if(instance == null) {
+	         instance = new Loader();
+	      }
+	      return instance;
+	}
+	
+	public ArrayList<Float> loadPrices()
+	{
+		ArrayList<Float> outputList = new ArrayList<Float>();
+		String path = Stale.folderZDanymi;
+		
+		print(path);
+		getInput("loadPrices");
+		
+		BufferedReader br = null;
+
+			try {
+				br = new BufferedReader(new FileReader(path));
+				
+				int counter=0;
+				Boolean isSaceEncountered =false;
+				
+				String line;
+				while ((line=br.readLine())!=null)
+				{
+					if (line.equals(""))
+					{
+						
+					}
+					
+				}
+				
+				
+				br.close();
+				
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		return outputList;
+
+	}
+
+	
+}

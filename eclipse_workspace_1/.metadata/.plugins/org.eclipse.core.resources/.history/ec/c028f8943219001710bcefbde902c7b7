@@ -1,0 +1,6 @@
+
+public class CoreClass {
+
+	Scanner sc = new Scanner(Systtem.in);
+	
+}

@@ -157,6 +157,8 @@ String simulationEndDate =Stale.simulationEndDate;
 	{
 		try {
 			writerWriteLine(writer,"scenariusz,"+Stale.scenariusz);
+			writerWriteLine(writer,"ceny z generatora,"+Stale.cenyZGeneratora);
+
 			writer.write("ID,"+prosument.getID()+System.lineSeparator());
 			writer.write("Cena Zewnetrzna,"+Stale.cenaDystrybutoraZewnetrznego+System.lineSeparator());
 			
@@ -613,7 +615,7 @@ String simulationEndDate =Stale.simulationEndDate;
 		ArrayList<String> dayHourList =LokalneCentrum.getHourList();
 
 		
-		String pathToFile=scenarioFolder+"\\handel\\pierwszeCeny.csv";
+		String pathToFile=scenarioFolder+"\\handel\\pierwszeCeny_"+Stale.scenariusz+".csv";
 		try {
 			Writer writer = new FileWriter(pathToFile);
 			
@@ -651,8 +653,8 @@ String simulationEndDate =Stale.simulationEndDate;
 				if (wolumenHandlu.get(a)!=0)
 				{
 					String dayHour =dayHourList.get(a);
-					String hour = dayHourGetDay(dayHour);
-					String day = dayHourGetHour(dayHour);
+					String day = dayHourGetDay(dayHour);
+					String hour = dayHourGetHour(dayHour);
 					String s= stringSeries(day,hour,
 							eToZero(pierwszeCeny.get(a)+""),eToZero(finalneCeny.get(a)+""),
 							eToZero(wolumenHandlu.get(a)+""),statusWyjscia.get(a)+"");

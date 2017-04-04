@@ -45,6 +45,18 @@ public class LokalneCentrum extends CoreClass {
 		return timeIndex;
 	} 
 	
+	static public String getCurrentHour()
+	{
+		String[] s2 =hourList.get(timeIndex).split(" ");		
+		return s2[1];
+	}
+	
+	static public String getCurrentDay()
+	{
+		String[] s2 =hourList.get(timeIndex).split(" ");
+		return s2[0];
+	}
+	
 	//--------------------
 	//SETTERS
 	

@@ -61,12 +61,6 @@ public class LokalneCentrum extends CoreClass {
 		return timeIndex;
 	} 
 	
-	//--------------------
-	//SETTERS
-	
-	//--------------------
-	//OTHER
-	
 	static public String getCurrentHour()
 	{
 		String[] s2 =hourList.get(timeIndex).split(" ");		
@@ -77,7 +71,15 @@ public class LokalneCentrum extends CoreClass {
 	{
 		String[] s2 =hourList.get(timeIndex).split(" ");
 		return s2[0];
-	}
+	}	
+	
+	//--------------------
+	//SETTERS
+	
+	//--------------------
+	//OTHER
+	
+
 	
 	//TODO
 	public void start()
@@ -244,7 +246,7 @@ public class LokalneCentrum extends CoreClass {
 	void simulationStep()
 	{
 		
-		print ("simualtion step "+hourList.get(timeIndex));
+		//print ("simualtion step "+hourList.get(timeIndex));
 		
 		//Zeby byl jakis output keidy symualcja dziala
 		if (timeIndex%4==0)
@@ -297,7 +299,7 @@ public class LokalneCentrum extends CoreClass {
 		long timeElapsed =(long) ((System.nanoTime()- simulationStartTime)/(long)Math.pow(10, 9));
 		print("Simulation time "+timeElapsed);
 
-		//listaProsumentow2.consistencyCheck();
+		listaProsumentowWrap.endSimulationCheck();
 		
 		//make all prosuments do the end of simualtion calculations and write report 
 		listaProsumentowWrap.endSimulationReport();
@@ -310,6 +312,8 @@ public class LokalneCentrum extends CoreClass {
 			rynek.endOfSimulation();
 		}
 	}
+	
+
 
 	
 	

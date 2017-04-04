@@ -298,13 +298,13 @@ public class Optimizer extends CoreClass {
 			if (kupuj>0.5f) 
 			{
 				//generacja zawiera wyniki handlu (energia nabyta)
-				handelConstrain=cplex.addGe(constrianMarker.getGeneration(), cplex.sum(EM_c[0],EM_s[0]));
+				handelConstrain=cplex.addEq(constrianMarker.getGeneration(), cplex.sum(EM_c[0],EM_s[0]));
 				cplex.addEq(binHandelKupuj[0],1 );
 			}
 			else
 			{
 				//konsumpcja zawiera wyniki handlu (energia sprzedana)
-				handelConstrain=cplex.addGe(Math.abs(constrianMarker.getConsumption()), cplex.sum(EB_s[0],G_s[0]));
+				handelConstrain=cplex.addEq(Math.abs(constrianMarker.getConsumption()), cplex.sum(EB_s[0],G_s[0]));
 				cplex.addEq(binHandelKupuj[0],0 );
 			}			
 	   	}

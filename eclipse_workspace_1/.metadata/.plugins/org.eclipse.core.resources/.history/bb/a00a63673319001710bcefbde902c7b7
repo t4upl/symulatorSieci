@@ -1,0 +1,39 @@
+
+public class Massive {
+
+	//wykonaj to co inen klasy tylko masowo (np dla wsyzsktich scenariuszy)
+
+	//mowi co wziac jako x przy obliczainiu korelacji z finalna cena
+	//generacja - generacja usrednionego prosumenta
+	//
+	String x = "generacja";
+	
+	public void massiveCorelationCeny()
+	{
+		
+	}
+	
+	public void massiveCorelation()
+	{
+		int Scenario=2;
+		
+		while (Scenario<7)
+		{
+			
+			String folder = "cenaZZewnatrz";
+			System.out.println("\n"+Scenario);
+			
+			//plik z cenami (CenyPredykcjiVSCenyFinalne)
+			String path ="C:\\Users\\Administrator\\Desktop\\symulacjaOutput\\"+folder
+				+ "\\Scenario_"+Scenario+"\\handel\\pierwszeCeny_"+Scenario+".csv";
+		
+			Corelation c = new Corelation();
+			c.readCeny(path);
+			
+			//if (x.equals(arg0))
+			c.run();
+			Scenario++;
+		}
+	}
+	
+}

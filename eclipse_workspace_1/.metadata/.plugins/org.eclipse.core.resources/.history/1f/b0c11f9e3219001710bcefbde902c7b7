@@ -1,0 +1,13 @@
+import java.util.Scanner;
+
+public class CoreClass {
+
+	String ClassName =this.getClass().getName();
+	Scanner sc = new Scanner(System.in);
+	
+	print(String s)
+	{
+		System.out.println();
+	}
+	
+}

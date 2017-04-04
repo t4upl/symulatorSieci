@@ -296,5 +296,102 @@ public class ListaProsumentowWrap extends CoreClass {
 		}
 	}
 	
+	public void endSimulationCheck()
+	{
+		print("\nendSimulationCheck -start");
+		
+		endSimulationCheckStaloscHandlu();
+	}
+	
+	void endSimulationCheckStaloscHandlu()
+	{
+		
+		//ODWROTNIE DayData w zewnetrznej petli, prosumenci w wewnetrznej
+		
+		ArrayList<DayData> dList2 =listaProsumentow.get(0).getDayDataList();
+		
+		int i=0;
+		for (DayData d: dList2)
+		{
+			float sumaKupna=0;
+			float sumaSprzedazy=0;
+			
+			for (Prosument prosument: listaProsumentow)
+			{
+				ArrayList<DayData> dList3 = prosument.getDayDataList();
+				DayData d2 =dList3.get(i);
+				
+				float kupno = d2.getZRynekDoBaterii()+d2.getZRynekNaKonsumpcje();
+				float sprzedaz =d2.getZGeneracjiNaRynek()+d2.getZBateriiNaRynek();
+				
+				sumaKupna+=kupno;
+				sumaSprzedazy+=sprzedaz;
+				
+				if (kupno>0 && sprzedaz>0)
+				{
+					print ("\nERROR endSimulationCheckStaloscHandlu - prosument has selling/buying mix");
+					print("prosument "+prosument.getID());
+					print ("kupno "+kupno );
+					print ("sprzedaz "+sprzedaz);
+					print("kupuj "+d2.getKupuj());
+					print("DayData indeks "+i);
+					getInput();
+					
+				}
+				
+			}
+			
+			/*
+			if (i==21)
+			{
+				print("i==21 endSimulationCheckStaloscHandlu");
+				print ("kupno suma "+sumaKupna );
+				print ("sprzedaz suma "+sumaSprzedazy);
+				getInput();
+			}*/
+			
+			if (Math.abs(sumaKupna-sumaSprzedazy)>Stale.malaLiczba)
+			{
+				print ("\nERROR endSimulationCheckStaloscHandlu - rynek ma nierowny wolumen sprzedazy i kupna");
+				print ("kupno suma "+sumaKupna );
+				print ("sprzedaz suma "+sumaSprzedazy);
+				print("DayData indeks "+i);
+				getInput();
+				
+			}
+			
+			i++;
+		}
+		
+		/*
+		int i=0;
+		while (i<listaProsumentow.size())
+		{
+			ArrayList<DayData> dList =listaProsumentow.get(i).getDayDataList();
+			
+			float sumaKupna=0;
+			float sumaSprzedazy=0;
+			
+			for ( DayData d: dList)
+			{
+				sumaKupna+=(d.getZRynekDoBaterii()+d.getZRynekNaKonsumpcje());
+				sumaSprzedazy+=d.getZGeneracjiNaRynek()+d.getZBateriiNaRynek();
+			}
+			
+			float shouldBeZero = Math.abs(sumaKupna-sumaSprzedazy);
+			
+			if (shouldBeZero>Stale.malaLiczba)
+			{
+				print("\nERROR in endSimulationCheckStaloscHandlu");
+				print("at indeks ");
+				getInput();
+			}
+			
+			i++;
+		}
+		*/
+		
+	}
+	
 	
 }

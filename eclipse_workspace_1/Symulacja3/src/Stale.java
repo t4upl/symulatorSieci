@@ -4,6 +4,10 @@ public class Stale {
 	
 	static final int scenariusz=6;
 	
+	//okresla czy wykorzystac cenyz  generatora cyz wykorzystac wektor cen z zewnatrz
+	//np z poprzedniej iteracji
+	static final boolean cenyZGeneratora = false;
+	
 	static final float pojemnoscBateriiIfEnabled=13.5f;
 	static final float predkoscBaterii=5;
 
@@ -20,9 +24,7 @@ public class Stale {
 	static final String folderZDanymi="C:\\Users\\Administrator\\Desktop\\dane_do_symulacji";
 	static final String outputFolder="C:\\Users\\Administrator\\Desktop\\symulacjaOutput";
 	
-	//okresla czy wykorzystac cenyz  generatora cyz wykorzystac wektor cen z zewnatrz
-	//np z poprzedniej iteracji
-	static final boolean cenyZGeneratora = true;
+
 	
 	
 	//cena minimalna i maksymalna na rynku lokalnym

@@ -99,6 +99,12 @@ public class Agregator extends CoreClass {
 			a++;
 		}
 		
+		//debug only
+		if (ID==100)
+		{
+			prosument2.costCheck();
+		}
+		
 		prosument2.DayDataDivide(indexArray.length);
 				
 		//false bo unused geenration licozna jako srednia a nie na podstawie danych
@@ -125,6 +131,8 @@ public class Agregator extends CoreClass {
 	//ID for debug only
 	void addProsument(Prosument prosument1, Prosument prosument2,int ID)
 	{
+		Boolean isDebug=false;
+		
 		ArrayList<DayData> dayDataList = prosument1.getDayDataList();
 		ArrayList<DayData> dayDataList2 = prosument2.getDayDataList();
 
@@ -134,7 +142,23 @@ public class Agregator extends CoreClass {
 			DayData dayData = dayDataList.get(a);
 			DayData dayData2 = dayDataList2.get(a);
 			
-			addDayData(dayData,dayData2,ID,a);			
+			if (a==21 && isDebug)
+			{
+				print("\nhello\n#21 "+prosument2.getID());
+				print (dayData.getCost());
+				print (dayData2.getCost());
+				getInput();
+			}
+			
+			addDayData(dayData,dayData2,ID,a);
+			
+			if (a==21 && isDebug)
+			{
+				print("#21 "+prosument2.getID());
+				print (dayData.getCost());
+				getInput();
+			}
+			
 			a++;
 		}
 	}

@@ -831,6 +831,28 @@ public class Prosument extends CoreClass {
 		sterowanie.setGeneration(d2.getGeneration());
 		sterowanie.setTrueGeneration(d2.getTrueGeneration());
 		return sterowanie;
-	}	
+	}
+	
+	//sprawdza czy w zadnym dniu nie ma ujemnego kosztu
+	//uzywane przy agregacji
+	public void costCheck()
+	{
+		int i=0;
+		while (i<dayDataList.size())
+		{
+			if (dayDataList.get(i).getCost()+Stale.malaLiczba<0)
+			{
+				
+				print("\nERROR in costCheck");
+				print("Fail at index "+i+"\nprosument ID "+ID);
+				print("cost for agregate prosument must be =>0");
+				print("cost "+dayDataList.get(i).getCost());
+				getInput("");
+				
+			}
+			
+			i++;
+		}
+	}
 	
 }

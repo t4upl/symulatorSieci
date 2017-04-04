@@ -1,0 +1,24 @@
+
+public class Massive {
+
+	//wykonaj to co inen klasy tylko masowo (np dla wsyzsktich scenariuszy)
+
+	public void massiveCorelation(){
+		int Scenario=2;
+		
+		while (Scenario<7)
+		{
+			
+			String folder = "cenaZGeneratora";
+			System.out.println("\n"+Scenario);
+			String path ="C:\\Users\\Administrator\\Desktop\\symulacjaOutput\\"+folder+
+				+ "\\Scenario_"+Scenario+"\\handel\\pierwszeCeny_"+Scenario+".csv";
+		
+			Corelation c = new Corelation();
+			c.read(path);
+			c.run();
+			Scenario++;
+		}
+	}
+	
+}
