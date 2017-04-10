@@ -1,0 +1,34 @@
+
+public class EVData {
+
+	//0 - dom, 1- podroz z domu do pracy, 2 - praca, 3 - podroz z pracy do domu
+	int status;
+
+	ArrayList<IloNumVar[]> EVdom;
+	ArrayList<IloNumVar[]> EVdom_c; 
+	ArrayList<IloNumVar[]> EVdom_EB;
+	ArrayList<IloNumVar[]> EB_EVdom;
+	ArrayList<IloNumVar[]> G_EVdom;
+	ArrayList<IloNumVar[]> Zew_EVdom;
+	
+	
+	ArrayList<IloNumVar[]> EVpraca;
+	ArrayList<IloNumVar[]> EVpraca_c;
+	ArrayList<IloNumVar[]> EVpraca_EB;
+	ArrayList<IloNumVar[]> EB_EVpraca;
+	ArrayList<IloNumVar[]> G_EVpraca;
+	ArrayList<IloNumVar[]> Zew_EVpraca;
+	
+	public int getStatus() {
+		return status;
+	}
+
+	public void setStatus(int status) {
+		this.status = status;
+	}
+
+
+	
+	
+	
+}

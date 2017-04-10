@@ -182,6 +182,7 @@ public class Optimizer extends CoreClass {
 		return exp;
 	}
 	
+	//TODO
 	void setVariables(ArrayList<Float> priceVector, IloCplex cplex)
    {
 		this.predkoscBaterii =prosument.getPredkoscBaterii();

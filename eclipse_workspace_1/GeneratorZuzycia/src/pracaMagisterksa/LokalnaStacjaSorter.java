@@ -20,11 +20,11 @@ public class LokalnaStacjaSorter {
 	  public ArrayList<LokalnaStacja> getNumberOfNonZeroConsumption() {         
 		    Collections.sort(localList, LokalnaStacja.numberOfNonZeroConsumptionRecordsComparator);         
 		    return localList;     
-		  } 	  
+	  } 	  
 	  
 	  public ArrayList<LokalnaStacja> getNumberOfNonZeroGeneration() {         
 		    Collections.sort(localList, LokalnaStacja.numberOfNonZeroGenerationRecordsComparator);         
 		    return localList;     
-		  } 	  
+	  } 	  
 
 }

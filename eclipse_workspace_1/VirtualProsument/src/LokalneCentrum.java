@@ -78,6 +78,8 @@ public class LokalneCentrum extends CoreClass {
 		
 		modyfikatorScenariusza();
 		
+		//getInput("modyfikatorScenariusza -end");
+		
 		stworzVirutalProsument();
 		
 		

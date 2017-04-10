@@ -4,6 +4,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Main {
 
@@ -11,47 +13,20 @@ public class Main {
 		// TODO Auto-generated method stub
 		
 
-		BufferedReader br = null;
-		FileReader fr = null;
-		
-		String FILENAME ="C:\\Users\\Administrator\\Desktop\\hi.txt";
+		int[] array = {5,5, 5, 3, 4, 4, 2, 2, 1};
 
-		try {
+		Arrays.sort(array);
+		Set<Integer> set = new HashSet<Integer>();
 
-			fr = new FileReader(FILENAME);
-			br = new BufferedReader(fr);
+		for (int i = 0; i < array.length; i++) {
 
-			String sCurrentLine;
-
-			br = new BufferedReader(new FileReader(FILENAME));
-
-			while ((sCurrentLine = br.readLine()) != null) {
-				System.out.println(sCurrentLine);
-			}
-			
-			br.close();
-			
-			//open once more
-			br = new BufferedReader(new FileReader(FILENAME));
-
-			while ((sCurrentLine = br.readLine()) != null) {
-				System.out.println(sCurrentLine);
-			}
-			
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				if (br != null)
-					br.close();
-				if (fr != null)
-					fr.close();
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
-
+		    if (!set.add(array[i])) {
+		        set.remove(array[i]);
+		    }
 		}
+		
+		System.out.println(set.toString());
+		 
 		
 		
 	}

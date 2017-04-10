@@ -8,12 +8,12 @@ import java.util.ArrayList;
 public class Prosument extends CoreClass {
 	
 	float stosunekGeneracjiDoKonsumpcji=0f;
-	private ArrayList<DayData> dayDataList = new ArrayList<DayData>();
+	protected ArrayList<DayData> dayDataList = new ArrayList<DayData>();
 	
 	
 	//W Virtual Prosument handel jest zawsze na false
 	private Boolean handel=false;
-	private int ID;
+	protected int ID;
 	private float cenaDystrybutoraZewnetrznego=Stale.cenaDystrybutoraZewnetrznego;
 	private float mnoznikGeneracji=0f;
 	
@@ -406,9 +406,8 @@ public class Prosument extends CoreClass {
 		
 	}
 	
-	public void zaktualizujHandelBrakHandlu()
+	void zaktualizujHandelBrakHandluZwyklyScenariusz()
 	{
-		
 		DayData dayData2 = dayDataList.get(LokalneCentrum.getTimeIndex());
 		
 		float generation = dayData2.getTrueGeneration();
@@ -444,6 +443,17 @@ public class Prosument extends CoreClass {
 		}
 		
 		dayData2.obliczStanBateriiNaKoniecSlotu();
+	}
+	
+	void zaktualizujHandelBrakHandluEVScenariusz()
+	{
+		
+	}
+	
+	public void zaktualizujHandelBrakHandlu()
+	{
+		//print("Hello zwykly prosument");
+		zaktualizujHandelBrakHandluZwyklyScenariusz();	
 	}
 	
 	public void tick()

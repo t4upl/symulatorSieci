@@ -2,20 +2,20 @@
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item value="false" key="isRegEx"/>
-		<item value="Ceny" key="selection"/>
+		<item value="createObjectiveKosztZew" key="selection"/>
 		<item value="false" key="casesensitive"/>
 		<item value="false" key="incremental"/>
 		<item value="true" key="wrap"/>
 		<item value="false" key="wholeword"/>
 		<list key="findhistory">
-			<item value="ceny"/>
-			<item value="updateAlfa - error"/>
-			<item value="prosument"/>
-			<item value="pierwsze"/>
-			<item value="endSimulationCheck"/>
-			<item value="Prosument"/>
-			<item value="Wraz ze wzrastjaaca cena chec nabywcza powinna spadac =&gt; alfa mniejsza rowna zero"/>
-			<item value="rozpisz"/>
+			<item value="createObjectiveKosztZew"/>
+			<item value="Zew_EVdom"/>
+			<item value="CPLEX success"/>
+			<item value="OptimizerEV CPLEX success"/>
+			<item value="form"/>
+			<item value="dodajOgraniczeniaPoczatkowyStanBaterii"/>
+			<item value="liczbaSamochodow"/>
+			<item value="stanPoczatkowyBaterii"/>
 		</list>
 		<list key="replacehistory">
 		</list>
@@ -24,7 +24,7 @@
 		<item value="284" key="DIALOG_WIDTH"/>
 		<item value="1|Segoe UI|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI" key="DIALOG_FONT_NAME"/>
 		<item value="391" key="DIALOG_HEIGHT"/>
-		<item value="1089" key="DIALOG_X_ORIGIN"/>
-		<item value="115" key="DIALOG_Y_ORIGIN"/>
+		<item value="1228" key="DIALOG_X_ORIGIN"/>
+		<item value="249" key="DIALOG_Y_ORIGIN"/>
 	</section>
 </section>
