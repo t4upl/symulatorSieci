@@ -82,6 +82,14 @@ public class ListaProsumentowWrap extends CoreClass {
 			
 			//scenariusz EV
 			case 17: scenario17(); break;
+			case 18: scenario18(); break;
+			case 19: scenario19(); break;
+			case 20: scenario20(); break;
+			case 21: scenario21(); break;
+			case 22: scenario22(); break;
+			case 23: scenario23(); break;
+
+
 			
 			default: System.out.println("!!!NO SUCH SCENARIO"); getInput();
 		}
@@ -180,6 +188,7 @@ public class ListaProsumentowWrap extends CoreClass {
 	
 	void scenario17()
 	{
+		Stale.handelWPracy =true;
 		int i=0;
 		while (i<4)
 		{
@@ -188,6 +197,87 @@ public class ListaProsumentowWrap extends CoreClass {
 			i++;
 		}
 	}
+	
+	void scenario18()
+	{
+		Stale.handelWPracy =true;
+		int i=0;
+		while (i<4)
+		{
+			listaProsumentow.get(i).setMnoznikGeneracji(mnoznikGeneracji);
+			//listaProsumentow.get(i).aktywujBaterie();
+			i++;
+		}
+	}
+	
+	void scenario19()
+	{
+		Stale.handelWPracy =false;
+		int i=0;
+		while (i<4)
+		{
+			listaProsumentow.get(i).setMnoznikGeneracji(mnoznikGeneracji);
+			//listaProsumentow.get(i).aktywujBaterie();
+			i++;
+		}
+	}
+	
+	void scenario20()
+	{
+		Stale.handelWPracy =false;
+		int i=0;
+		while (i<4)
+		{
+			listaProsumentow.get(i).setMnoznikGeneracji(mnoznikGeneracji);
+			listaProsumentow.get(i).przesunGeneracje();
+			//listaProsumentow.get(i).aktywujBaterie();
+			i++;
+		}
+	}
+	
+	void scenario21()
+	{
+		Stale.handelWPracy =true;
+		int i=0;
+		while (i<4)
+		{
+			listaProsumentow.get(i).setMnoznikGeneracji(mnoznikGeneracji);
+			listaProsumentow.get(i).przesunGeneracje();
+			//listaProsumentow.get(i).aktywujBaterie();
+			i++;
+		}
+	}
+	
+	void scenario22()
+	{
+		Stale.handelWPracy =false;
+		int i=0;
+		while (i<4)
+		{
+			listaProsumentow.get(i).setMnoznikGeneracji(mnoznikGeneracji);
+			
+			if (i<2)
+			{
+				listaProsumentow.get(i).przesunGeneracje();
+			}
+			//listaProsumentow.get(i).aktywujBaterie();
+			i++;
+		}
+	}
+	
+	void scenario23()
+	{
+		Stale.handelWPracy =false;
+		int i=0;
+		while (i<4)
+		{
+			listaProsumentow.get(i).setMnoznikGeneracji(mnoznikGeneracji);
+			listaProsumentow.get(i).aktywujBaterie();
+			i++;
+		}
+	}	
+	
+	
 	
 	//znajduje mnoznik taki ze suma generacji grupy prosumentow == suma konsumpcji grupy 
 	public float getMnoznik()
@@ -266,6 +356,7 @@ public class ListaProsumentowWrap extends CoreClass {
 		this.listaProsumentow = new ArrayList<>();
 		listaProsumentow.add(virtualProsument);
 		
+		
 	}
 	
 	public void stworzVirutalProsument()
@@ -313,7 +404,17 @@ public class ListaProsumentowWrap extends CoreClass {
 			Prosument prosument =listaProsumentow.get(a);
 			prosument.performEndOfSimulationCalculations();
 	
-			reporter.createProsumentReport(prosument);			
+			if (prosument instanceof ProsumentEV)
+			{
+				//getInput("endSimulationReport - prosument IS");
+				reporter.createProsumentReport((ProsumentEV)prosument);	
+			}
+			else
+			{
+				//getInput("endSimulationReport - prosument ISN'T");
+				reporter.createProsumentReport(prosument);
+			}
+						
 			a++;
 		}
 	}

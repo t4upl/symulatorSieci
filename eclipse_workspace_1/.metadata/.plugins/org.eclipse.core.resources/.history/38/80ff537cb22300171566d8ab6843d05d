@@ -1,0 +1,16 @@
+
+public class OptimizerEV {
+
+	private static OptimizerEV instance = null;
+	private OptimizerEV() 
+	{
+	}
+	
+	public static OptimizerEV getInstance() {
+	      if(instance == null) {
+	         instance = new OptimizerEV();
+	      }
+	      return instance;
+	}	
+	
+}

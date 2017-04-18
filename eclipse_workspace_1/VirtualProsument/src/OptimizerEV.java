@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import ilog.concert.IloException;
 import ilog.concert.IloNumExpr;
@@ -6,8 +7,15 @@ import ilog.concert.IloNumVar;
 import ilog.concert.IloNumVarType;
 import ilog.cplex.IloCplex;
 
+//FUNKCJONALNOSC OptimizerEV przeniesiona do OptimizerEV2
+//jedyny powod dla ktorego ta kalsa zostala pozostawiona to klasy zagniezdzone
+//Form i Sterowanie
 public class OptimizerEV extends CoreClass {
 
+	/*
+	
+	final Boolean EVwystpeujeWmodelu =false;
+	
 	ProsumentEV prosumentEV;
 
 	//Stale
@@ -28,6 +36,8 @@ public class OptimizerEV extends CoreClass {
 	
 	float[] C;
 	float[] G;
+	
+	Form24 form24;
 	
 	//koszt w chwili t
 	IloNumVar[] koszt; 
@@ -63,7 +73,7 @@ public class OptimizerEV extends CoreClass {
 	ArrayList<IloNumVar[]> G_EVdom;
 	ArrayList<IloNumVar[]> Zew_EVdom;
 	
-	
+	*/
 	//Singleton shit
 	private static OptimizerEV instance = null;
 	private OptimizerEV() 
@@ -77,6 +87,7 @@ public class OptimizerEV extends CoreClass {
 	      return instance;
 	}	
 	
+	/*
 	double[] createDoubleArray(double value,int liczbaElementow)
 	{
 		double[] d= new double[liczbaElementow];
@@ -89,6 +100,26 @@ public class OptimizerEV extends CoreClass {
 		
 		return d;
 	}
+	
+	
+	IloNumVar[] stworzWektorZmiennychCiaglych(int liczbaElementow, double lowerBoundValue, double upperBoundValue, IloCplex cplex)
+	{
+		IloNumVar[] output=null;
+		try {
+
+			//IloNumVar[] output= new	IloNumVar[liczbaElementow];
+			double[] lb =createDoubleArray(lowerBoundValue,liczbaElementow);
+			double[] ub =createDoubleArray(upperBoundValue,liczbaElementow);
+			IloNumVarType[] type =createIloNumVarTypeArray(IloNumVarType.Float,liczbaElementow);
+
+			output  = cplex.numVarArray(liczbaElementow, lb, ub, type);		
+		} catch (IloException e) {
+			getInput("ERROR stworzWektorZmiennychBinarnych");
+			e.printStackTrace();
+		}		
+		
+		return output;
+	}	
 	
 	IloNumVar[] stworzWektorZmiennychCiaglych(int liczbaElementow, double upperBoundValue, IloCplex cplex)
 	{
@@ -140,15 +171,21 @@ public class OptimizerEV extends CoreClass {
 	//TODO
 	void setVariables(IloCplex cplex, ProsumentEV prosumentEV, Form24 form24)
 	{
+		this.form24=form24;
+		
 		this.predkoscBaterii =prosumentEV.getPredkoscBaterii();
 		this.pojemnoscBaterii = prosumentEV.getPojemnoscBaterii();
 		this.liczbaSamochodow = form24.geteVDataList().size();
-		//print ("liczbaSamochodow "+liczbaSamochodow);
 		
-		koszt = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,reallyBigNumber, cplex);
-		koszt_Zew = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,reallyBigNumber, cplex);
-		koszt_sklad = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,reallyBigNumber, cplex);
-		koszt_EV = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,reallyBigNumber, cplex);
+		print ("liczbaSamochodow "+liczbaSamochodow);
+		print("pojemnoscBaterii "+pojemnoscBaterii);
+		print("predkoscBaterii "+predkoscBaterii);
+		
+		
+		koszt = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,-reallyBigNumber,reallyBigNumber, cplex);
+		koszt_Zew = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,-reallyBigNumber,reallyBigNumber, cplex);
+		koszt_sklad = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,-reallyBigNumber,reallyBigNumber, cplex);
+		koszt_EV = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,-reallyBigNumber,reallyBigNumber, cplex);
 
 		
 		EB = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,pojemnoscBaterii, cplex);
@@ -167,7 +204,8 @@ public class OptimizerEV extends CoreClass {
 		//ArrayList<DayData> dayDataList24 = prosumentEV.getDayDataListInT();
 		
 		C = form24.getKonsumpcjaArray();
-		G = form24.getGeneracjaArray();	
+		G = form24.getGeneracjaArray();
+		
 		
 		//
 
@@ -175,23 +213,12 @@ public class OptimizerEV extends CoreClass {
 		EVdom_c=stworzListeWektorZmiennychCiaglych(cplex,Stale.predkoscAkumulatoraEV);
 		
 		//predkosc baterii, a nie Stale.predkoscBaterii bo dla wirtualnego rposumenta ona jest rozna niz domyslna
+		//print ("SetVariables min:"+Math.min(Stale.predkoscAkumulatoraEV,predkoscBaterii));
 		EVdom_EB=stworzListeWektorZmiennychCiaglych(cplex,Math.min(Stale.predkoscAkumulatoraEV,predkoscBaterii));
 		EB_EVdom=stworzListeWektorZmiennychCiaglych(cplex,Math.min(Stale.predkoscAkumulatoraEV,predkoscBaterii));
 		G_EVdom=stworzListeWektorZmiennychCiaglych(cplex,Stale.predkoscAkumulatoraEV);
 		Zew_EVdom=stworzListeWektorZmiennychCiaglych(cplex,Stale.predkoscAkumulatoraEV);
 		
-		//print("Set Variables -almost end");
-		//getInput("Zew_EVdom "+Zew_EVdom.size());
-		
-	
-		/*
-		EVpraca=stworzListeWektorZmiennychCiaglych(cplex,Stale.pojemnoscAkumualtoraEV);
-		EVpraca_c=stworzListeWektorZmiennychCiaglych(cplex,Stale.predkoscAkumulatoraEV);
-		EVpraca_EB=stworzListeWektorZmiennychCiaglych(cplex,Math.min(Stale.predkoscAkumulatoraEV,Stale.predkoscBaterii));
-		EB_EVpraca=stworzListeWektorZmiennychCiaglych(cplex,Math.min(Stale.predkoscAkumulatoraEV,Stale.predkoscBaterii));
-		G_EVpraca=stworzListeWektorZmiennychCiaglych(cplex,Stale.predkoscAkumulatoraEV);
-		Zew_EVpraca=stworzListeWektorZmiennychCiaglych(cplex,Stale.predkoscAkumulatoraEV);*/
-
 
 	}
 	
@@ -312,11 +339,15 @@ public class OptimizerEV extends CoreClass {
 				createObjectiveKosztZew(cplex, i);
 				//getInput("createObjective - amnaged to create objective1");
 				
+				print("WYLACZ TO ZANIM POJDZIESZ DALEJ");
+				cplex.addEq(koszt_sklad[i], 0);
+				cplex.addEq(koszt_EV[i], 0);
+				
 				//2
-				createObjectiveKosztSklad(cplex, i);
+				//createObjectiveKosztSklad(cplex, i);
 				
 				//3
-				createObjectiveKosztEV(cplex, i);
+				//createObjectiveKosztEV(cplex, i);
 				
 				//cplex.addEq(koszt[i], koszt_1[i]);
 				//print ("part II");
@@ -367,8 +398,50 @@ public class OptimizerEV extends CoreClass {
 		int i=0;
 		while (i<liczbaSamochodow)
 		{
-			dodajOgraniczeniaEVDlaPojedynczegoSamochodu(cplex,i);			
+			
+			if (EVwystpeujeWmodelu)
+			{
+				dodajOgraniczeniaEVDlaPojedynczegoSamochodu(cplex,i);
+			}	
+			else
+			{
+				wylaczSamochod(cplex,i);
+			}
 			i++;
+		}
+	}
+	
+	void wylaczSamochod(IloCplex cplex, int indeksSamochodu)
+	{
+		
+		print ("wylaczSamochod runs for "+indeksSamochodu);
+		try{
+			
+			
+			int i=0;
+			while(i<Stale.horyzontCzasowy)
+			{
+				IloNumVar[] EV24 = EVdom.get(indeksSamochodu);
+				IloNumVar[] EV_c24 = EVdom_c.get(indeksSamochodu);			
+				IloNumVar[] EV_EB24 = EVdom_EB.get(indeksSamochodu);
+				
+				IloNumVar[] EB_EVdom24 = EB_EVdom.get(indeksSamochodu);
+				IloNumVar[] G_EVdom24 = G_EVdom.get(indeksSamochodu);			
+				IloNumVar[] Zew_EVdom24 = Zew_EVdom.get(indeksSamochodu);
+				
+				cplex.addEq(EV24[i], 0);
+				cplex.addEq(EV_c24[i], 0);
+				cplex.addEq(EV_EB24[i], 0);
+				
+				cplex.addEq(EB_EVdom24[i], 0);
+				cplex.addEq(G_EVdom24[i], 0);
+				cplex.addEq(Zew_EVdom24[i], 0);
+				
+				i++;
+			}
+		} catch (Exception e)
+		{
+			print ("ERROR in wylaczSamochod");
 		}
 	}
 	
@@ -567,53 +640,104 @@ public class OptimizerEV extends CoreClass {
 		try {
 			
 		
-			double[] EB_solved = cplex.getValues(EB);
-			double[] G_c_solved = cplex.getValues(G_c);
-			double[] G_sklad_solved = cplex.getValues(G_sklad);
-			double[] EB_c_solved = cplex.getValues(EB_c);
-
-
-			/*
-			 
-			//lista zaiwera pod i-tym indeksem dla i-tego samochodu 
-			//tablice rozmiaru hoeyzotn czasowy okreslajaca zachowanie 
-			ArrayList<IloNumVar[]> EVdom;
-			ArrayList<IloNumVar[]> EVdom_c; 
-			ArrayList<IloNumVar[]> EVdom_EB;
-			ArrayList<IloNumVar[]> EB_EVdom;
-			ArrayList<IloNumVar[]> G_EVdom;
-			ArrayList<IloNumVar[]> Zew_EVdom;		
-			*/
 			
-		   ArrayList<DayData> dList = new ArrayList<>();  
+			double[] EB_solved = cplex.getValues(EB);
+			print("EB_solved");
+			
+			double[] G_c_solved = cplex.getValues(G_c);
+			print ("G_c_solved");
+			
+			double[] G_sklad_solved = cplex.getValues(G_sklad);
+			print ("G_sklad_solved");
+
+			
+			double[] EB_c_solved = cplex.getValues(EB_c);
+			print ("EB_c_solved");
+
+
+			ArrayList<String> dayList =  LokalneCentrum.getDayList();
+			ArrayList<String> hourList =  LokalneCentrum.getHourList2();
+			
+		   //ArrayList<DayData> dList = new ArrayList<>();  
 		   int i=0;
 		   while (i<Stale.horyzontCzasowy)
 		   {
 			   DayData d = new DayData();
+			   
+			   //hourList2 i dayList jest ograniczony prze zsimulatin enddat ewiec jest ryzyko wziecia z poza lsity
+			   if (LokalneCentrum.getTimeIndex()+i<dayList.size())
+			   {
+				   d.setDay(dayList.get(LokalneCentrum.getTimeIndex()+i));
+				   d.setHour(hourList.get(LokalneCentrum.getTimeIndex()+i));
+			   }
+			   
+			   d.setConsumption(C[i]);
+			   d.setGeneration(-1);
+			   d.setTrueGeneration(G[i]);
 			   d.setStanBateriiNaPoczatkuSlotu((float)EB_solved[i]);
 			   d.setZGeneracjiNaKonsumpcje((float)G_c_solved[i]);
 			   d.setZGeneracjiDoBaterii((float) G_sklad_solved[i]);
 			   d.setZBateriiNaKonsumpcje((float)EB_c_solved[i]);
+			   
+			   
+			   sterowanie.addToDayDataList(d);
+
 		
-			   dList.add(d);
+			   //dList.add(d);
 			   i++;
 		   }
+		   
+		   
+		   
 		   
 		   i=0;
 		   while (i<liczbaSamochodow)
 		   {
+			   ArrayList<EVData> listaZeSterowaniemPojedynczegoEV = new ArrayList<>();
 			   
+			   IloNumVar[] EV24 = EVdom.get(i);
+			   IloNumVar[] EV_c24 = EVdom_c.get(i); 
+			   IloNumVar[] EV_EB24 = EVdom_EB.get(i);
+			   IloNumVar[] EB_EV24 = EB_EVdom.get(i);
+			   IloNumVar[] G_EV24 = G_EVdom.get(i);
+			   IloNumVar[] Zew_EV24 = Zew_EVdom.get(i);
+			   
+				double[] EV24_solved = cplex.getValues(EV24);
+				double[] EV_c24_solved = cplex.getValues(EV_c24);
+				double[] EV_EB24_solved = cplex.getValues(EV_EB24);
+				double[] EB_EV24_solved = cplex.getValues(EB_EV24);
+	
+				double[] G_EV24_solved = cplex.getValues(G_EV24);
+				double[] Zew_EV24_solved = cplex.getValues(Zew_EV24);
+				
+			   
+				ArrayList<EVData> eList = new ArrayList<>();
 			   int j=0;
 			   while (j<Stale.horyzontCzasowy)
 			   {
+				   	EVData eVData = new EVData();
+										
+					eVData.setEVdom((float)EV24_solved[j]);
+					eVData.setEVdom_c((float)EV_c24_solved[j]);
+					eVData.setEVdom_EB((float)EV_EB24_solved[j]);
+					eVData.setEB_EVdom((float)EB_EV24_solved[j]);
+					eVData.setG_EVdom((float)G_EV24_solved[j]);
+					eVData.setZew_EVdom((float)Zew_EV24_solved[j]);
+					
+					eList.add(eVData);
+					
+					
+				   
 				   j++;
 			   }
+			   
+			   sterowanie.addToEVDataList(eList);
 			   
 			   i++;
 		   }
 		}catch (Exception e)
 		{
-			print("ERROR in fillOutSolvedVariables");
+			print("ERROR in fillOutSolvedVariables \n"+e.getMessage()+"\n"+e.getCause()+e.getStackTrace());
 		}
    	}
 	
@@ -634,8 +758,10 @@ public class OptimizerEV extends CoreClass {
 			
 			dodajOgraniczeniaPoczatkowyStanBaterii(cplex);
 			dodajOgraniczeniaModelu(cplex);
-			dodajOgraniczeniaEV(cplex);
 			
+
+			dodajOgraniczeniaEV(cplex);
+
 			
 			cplex.setOut(null);
 			//cplex.solve();
@@ -857,11 +983,69 @@ public class OptimizerEV extends CoreClass {
 		
 		cplex.addEq(EB[t],prawaStrona );
 	}
-
-	public class Sterowanie
+	*/
+	public static class Sterowanie
 	{
-		DayData dayData;		
+		ArrayList<DayData> dayDataList = new ArrayList<DayData>();		
 		ArrayList<ArrayList<EVData>> eVDataList = new ArrayList<>();  
+		
+		double[] koszt;
+		double[] koszt_Zew;
+		double[] koszt_sklad;
+		double[] koszt_EV;
+		
+		
+		
+		public double[] getKoszt() {
+			return koszt;
+		}
+
+		public void setKoszt(double[] koszt) {
+			this.koszt = koszt;
+		}
+
+		public double[] getKoszt_Zew() {
+			return koszt_Zew;
+		}
+
+		public void setKoszt_Zew(double[] koszt_Zew) {
+			this.koszt_Zew = koszt_Zew;
+		}
+
+		public double[] getKoszt_sklad() {
+			return koszt_sklad;
+		}
+
+		public void setKoszt_sklad(double[] koszt_sklad) {
+			this.koszt_sklad = koszt_sklad;
+		}
+
+		public double[] getKoszt_EV() {
+			return koszt_EV;
+		}
+
+		public void setKoszt_EV(double[] koszt_EV) {
+			this.koszt_EV = koszt_EV;
+		}
+
+		public ArrayList<DayData> getDayDataList() {
+			return dayDataList;
+		}
+
+		public ArrayList<ArrayList<EVData>> geteVDataList() {
+			return eVDataList;
+		}
+
+		void addToDayDataList(DayData d)
+		{
+			dayDataList.add(d);
+		}
+		
+		void addToEVDataList(ArrayList<EVData> eVDataList)
+		{
+			this.eVDataList.add(eVDataList);
+		}
+		
 	} 
 	
 	//zawiera wszystkie wektory (dlugosci 24) potrzebne do przeprowadzenia optymalizacji

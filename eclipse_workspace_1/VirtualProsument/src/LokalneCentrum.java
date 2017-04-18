@@ -11,6 +11,12 @@ public class LokalneCentrum extends CoreClass {
 	//zawiera dzien i godzine (ograniczone przez simulationEndDate)
 	static ArrayList<String> hourList = new ArrayList<String>(); 
 
+	//zaiwera godizny
+	static ArrayList<String> hourList2 = new ArrayList<String>();
+	
+	//zawiera dni
+	static ArrayList<String> dayList = new ArrayList<String>(); 
+
 	
 	//System
 	//deklaracje w funkcji setUp
@@ -39,6 +45,22 @@ public class LokalneCentrum extends CoreClass {
 	//TODO
 	//--------------------
 	//GETTERS
+	
+	public static ArrayList<String> getHourList2()
+	{
+		return hourList2;
+	}
+	
+	public static ArrayList<String> getDayList()
+	{
+		return dayList;
+	}
+	
+	
+	public static ArrayList<String> getHourList()
+	{
+		return hourList;
+	}
 	
 	public static int getTimeIndex()
 	{
@@ -78,10 +100,8 @@ public class LokalneCentrum extends CoreClass {
 		
 		modyfikatorScenariusza();
 		
-		//getInput("modyfikatorScenariusza -end");
 		
 		stworzVirutalProsument();
-		
 		
 		startSimulation();
 		
@@ -171,6 +191,14 @@ public class LokalneCentrum extends CoreClass {
 	        		{
 		        		//System.out.println(line);
 	        			hourList.add(s2[0]);
+	        			
+	        			String dayHour = s2[0];
+	        			String[] s22 =dayHour.split(" "); 
+	        			String day = s22[0];
+	        			String hour = s22[1];
+	        			
+	        			hourList2.add(hour);
+	        			dayList.add(day);
 	        		}
 	        		
 	        	}
@@ -206,7 +234,7 @@ public class LokalneCentrum extends CoreClass {
 		int a=0;
 		while(a<hourList.size())
 		{
-			print(hourList.get(a));
+			//print(hourList.get(a));
 			
 			simulationStep();				
 			a++;

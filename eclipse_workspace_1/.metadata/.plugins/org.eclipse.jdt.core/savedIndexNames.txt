@@ -20,7 +20,6 @@ INDEX VERSION 1.129+C:\user_space\good_stuff_2\SourceTree\SymulatorSieciSource\e
 188619105.index
 2017505986.index
 2831536327.index
-2925884253.index
 3172068124.index
 2927524569.index
 1904741536.index

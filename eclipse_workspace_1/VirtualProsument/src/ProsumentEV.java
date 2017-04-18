@@ -15,12 +15,45 @@ public class ProsumentEV extends Prosument {
 	ArrayList<ArrayList<EVData>> listaPodrozyFlota = new ArrayList<>(); 
 
 	OptimizerEV optimizerEV = OptimizerEV.getInstance();
+	OptimizerEV2 optimizerEV2 = OptimizerEV2.getInstance();
+	
+	
+	//uzywane przy reportowaniu
+	//zahcowaj u prosument, bo trudno bedzie to zwiazac z EV()
+	ArrayList<Float> koszty = new ArrayList<>();
+	ArrayList<Float> koszty_Zew = new ArrayList<>();
+	ArrayList<Float> koszty_sklad = new ArrayList<>();
+	ArrayList<Float> koszty_EV = new ArrayList<>();
+
 	
 	//GETTTERS
+	
+	
 	ArrayList<EVData> getEVDataList()
 	{
 		return this.eVDataList;
 	}
+	
+	public ArrayList<Float> getKoszty() {
+		return koszty;
+	}
+
+	public ArrayList<Float> getKoszty_Zew() {
+		return koszty_Zew;
+	}
+
+	public ArrayList<Float> getKoszty_sklad() {
+		return koszty_sklad;
+	}
+
+	public ArrayList<Float> getKoszty_EV() {
+		return koszty_EV;
+	}
+
+	public ArrayList<ArrayList<EVData>> getListaPodrozyFlota() {
+		return listaPodrozyFlota;
+	}
+
 	
 	//SETTERS
 	
@@ -28,6 +61,7 @@ public class ProsumentEV extends Prosument {
 	//------------------------------
 	//OTHER
 	
+
 	//uzupelnia(wyplenia wartosciami) liste podrozy
 	void createListaPodrozy(ArrayList<String> godzinyPodrozy)
 	{
@@ -37,9 +71,12 @@ public class ProsumentEV extends Prosument {
 		String wyjazd = godzinyPodrozy.get(0);
 		String przyjazd = godzinyPodrozy.get(1);
 		
+		//jezeli spotkano Stale.endOfSimulation to wstawiaj tylko 0 do listy (prosuemtn w domu) 
+		Boolean endDataReached = false;
+		
 		while (eVDataList.size()!=dayDataList.size())
 		{
-			//print("panda");
+
 			String hour = dayDataList.get(i).getHour();
 			
 			EVData eVData = new EVData();
@@ -72,25 +109,34 @@ public class ProsumentEV extends Prosument {
 			}
 			i++;
 			
+			//sprawdz czy znaleziono Stale.Simualtion end date jezeli tak to wstaiwaj zera
+			
+			if (endDataReached)
+			{
+				statusEVData =0;
+			}
+			else
+			{
+				String day = dayDataList.get(i).getDay();
+				
+				if ((day+" "+hour).equals(Stale.simulationEndDate))
+				{
+					//getInput("Heelo from createListaPodrozy");
+					endDataReached=true;					
+				}
+			}
+			
+
+			
 			eVData.setStatus(statusEVData);
 			eVDataList.add(eVData);
 		}
 		
-		//test
-		/*i=0;
-		for (Integer j: listaPodrozy)
-		{
-			String hour = dayDataList.get(i).getHour();
-			print(hour+" "+j);
-			i++;
-		}*/
 	}
 	
 	public void dodajListeDolistaPodrozyFlota(ArrayList<EVData> listaPodrozy)
 	{
-		listaPodrozyFlota.add(listaPodrozy);
-		
-		//print (listaPodrozyFlota.size());
+		listaPodrozyFlota.add(listaPodrozy);		
 	}
 	
 	
@@ -175,7 +221,7 @@ public class ProsumentEV extends Prosument {
 			int j=0;
 			while (j<Stale.horyzontCzasowy)
 			{
-				statusy.add(L1.get(j).getStatus());
+				statusy.add(L1.get(LokalneCentrum.getTimeIndex()+j).getStatus());
 				j++;
 			}
 			form24.addToStatusEV(statusy);
@@ -191,6 +237,7 @@ public class ProsumentEV extends Prosument {
 		return form24;
 	}
 	
+	//TODO
 	@Override
 	//nzjadz i wykonaj sterowanie wirtualnego prosuemtna posiadajaceog EV
 	public void zaktualizujHandelBrakHandlu()
@@ -200,9 +247,69 @@ public class ProsumentEV extends Prosument {
 		
 		//getInput("Managed to create form 24");
 		
-		OptimizerEV.Sterowanie sterowanie =optimizerEV.wyznaczSterowanie(form24,this);
-		print("zaktualizujHandelBrakHandlu -end");
-		getInput("");
+		OptimizerEV.Sterowanie sterowanie =optimizerEV2.wyznaczSterowanie(form24,this);
+		//OptimizerEV.Sterowanie sterowanie =optimizerEV.wyznaczSterowanie(form24,this);
+		
+		reporter.createSterowanieReport(sterowanie,this,form24);
+		
+		
+		rozpakujSterownaie(sterowanie);
+		
+		/*if (LokalneCentrum.getCurrentDay().equals("2015-06-02"))
+		{
+			print("IF FOR DEBUG ONLy"); //actually this whoel seciton is for debug - prosuemnts report only at the end
+			reporter.createProsumentReport(this);
+			getInput("STOP");
+		}*/
+		
+	}
+	
+	
+	//bierze wyniki z lsit w steornwniu i wrzuca do DayData i EVDataList
+	//nie zpaewnia,przepisania  stanu baterii ze slotu #0 jako poczatkowy stna baterii w slocie #1
+	//jest do teog oddzielna funkcja
+	void rozpakujSterownaie (OptimizerEV.Sterowanie sterowanie)
+	{
+		//print("rozpakujSterownaie -end");
+		
+		DayData fisrDayData = sterowanie.getDayDataList().get(0);
+		dayDataList.set(LokalneCentrum.getTimeIndex(), fisrDayData);
+		
+		
+		ArrayList<ArrayList<EVData>> eVDataListOfLists = sterowanie.eVDataList;
+		int i=0;
+		while (i<eVDataListOfLists.size())
+		{
+
+			
+			//print("rozpakujSterownaie "+i);
+			ArrayList<EVData> eVDataList2 = eVDataListOfLists.get(i);
+			ArrayList<EVData> eVDataListWirtualnegoProsumenta =listaPodrozyFlota.get(i);
+			
+			eVDataListWirtualnegoProsumenta.set(LokalneCentrum.getTimeIndex(), eVDataList2.get(0));
+			
+			//bo trzeba zapakowac stan baterii "na koneic slotu" 
+			//w "", bo EV nie ma czgeos takiego jak na koniec slotu - ma stan baterii na poczatku kolejnego slotu
+			eVDataListWirtualnegoProsumenta.set(LokalneCentrum.getTimeIndex()+1, eVDataList2.get(1));
+			i++;
+		}
+		
+		
+		//rozpakuj sterowanie
+		
+		double[] koszt24_solved = sterowanie.getKoszt();
+		double[] koszt_Zew24_solved= sterowanie.getKoszt_Zew();
+		double[] koszt_sklad24_solved = sterowanie.getKoszt_sklad();
+		double[] koszt_EV24_solved = sterowanie.getKoszt_EV();
+		
+		koszty.add((float)koszt24_solved[0]);
+		koszty_Zew.add((float)koszt_Zew24_solved[0]);
+		koszty_sklad.add((float)koszt_sklad24_solved[0]);
+		koszty_EV.add((float)koszt_EV24_solved[0]);
+		   
+		
+		
+		//getInput("rozpakujSterownaie -end");
 	}
 	
 	float[] getGenerationArray(ArrayList<DayData> dayDataList24)
@@ -239,4 +346,90 @@ public class ProsumentEV extends Prosument {
   		
   		return f;
   	}
+  	
+  	@Override
+  	void charge()
+  	{
+  		//print("UZUPELNIJ CHARGE");
+  		int currentTime = LokalneCentrum.getTimeIndex();
+  		DayData d =dayDataList.get(currentTime);
+  		
+  		//w kosztach jest trzymany ksozt uzyskany w wyniku optymalizacji
+  		//funkcja celu ma usunieta konsumpcje 
+  		d.setCost(koszty.get(currentTime)+d.getConsumption()*Stale.cenaDystrybutoraZewnetrznego);
+  	}
+  	
+  	public void createReport()
+  	{
+  		reporter.createProsumentReport(this);
+  	}
+  	
+  	@Override
+	public void performEndOfSimulationCalculations(Boolean countGenerationFlag)
+	{
+		//getInput("performEndOfSimulationCalculations - for EVprosument");
+		totalCost=0;
+		
+		int a=0;
+		String date="";
+		while (!date.equals(Stale.simulationEndDate))
+		{
+			DayData d = dayDataList.get(a);
+			totalCost+=d.getCost();			
+			a++;
+			d = dayDataList.get(a);
+			date=d.getDay()+" "+d.getHour();
+		}
+		
+		costNoReserve = totalCost;
+		countReserveBonus();		
+	}
+  	
+  	@Override
+	void countReserveBonus()
+	{
+  		print ("countReserveBonus ");
+		//index LokalneCentrum.getTimeIndex() bo to jest stan konca symualcji (Lokalne Centrum doszlo do Simulatin End date)
+		reserveBonus = dayDataList.get(LokalneCentrum.getTimeIndex()).getStanBateriiNaKoniecSlotu()*Stale.kosztAmortyzacjiBaterii;
+		int i=0;
+		while (i<listaPodrozyFlota.size())
+		{
+			ArrayList<EVData> eVlist = listaPodrozyFlota.get(i);
+			//print (reserveBonus);
+			//print ("stan baterii dla samochodu "+ i+" "+eVlist.get(LokalneCentrum.getTimeIndex()).EVdom );
+			reserveBonus+=eVlist.get(LokalneCentrum.getTimeIndex()).EVdom*Stale.kosztAmortyzacjiAkumulatoraEV;
+			i++;
+		}
+		
+		
+		totalCost-=reserveBonus;
+		
+	}
+  	
+  	//wykoanj skalownaie dla wsyzsktich smaochodow
+  	void EVDataDivide(int divider)
+  	{
+  		int i=0;
+  		while (i<listaPodrozyFlota.size())
+  		{
+  			ArrayList<EVData> eVlist = listaPodrozyFlota.get(i);
+  			
+  			int j=0;
+  			while (j<eVlist.size())
+  			{
+  				EVData eVData = eVlist.get(j);
+  				
+  				//skalowanie EVDaTa jest potrzebne w wirtualnym prosumencie po to zbey policzyc dobrze rezerwe
+  				//nie liczyc z nieprzeskalowanej rezerwy
+  				//zrzutu usrednionego prosuemnta tez brka wiec nie ma sensu liczyc reszty fieldow
+  				eVData.setEVdom(eVData.getEVdom()/divider);
+  				
+  				j++;
+  			}
+  			
+  			
+  			i++;
+  		}
+  	}
+  	
 }

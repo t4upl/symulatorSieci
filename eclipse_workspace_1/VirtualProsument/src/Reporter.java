@@ -8,8 +8,11 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 
 
+
 public class Reporter extends CoreClass {
 
+	final Boolean samochodyWlaczone = false;
+	
 	String simulationEndDate =Stale.simulationEndDate;
 	
 	//ustawiane przez LokalenCentrum
@@ -228,7 +231,7 @@ public class Reporter extends CoreClass {
 			int a=0;
 			while (!dateAhead.equals(simulationEndDate))
 			{
-				
+				//print(dateAhead);
 				wrtieDayData(writer,dList.get(a));
 				a++;
 				dateAhead=dList.get(a).getDay()+" "+dList.get(a).getHour();
@@ -320,6 +323,353 @@ public class Reporter extends CoreClass {
 		return s;
 	}
 	
+	String stringSeries(Float... args)
+	{
+		String s="";
+		
+		int a=0;
+		while (a<args.length)
+		{
+			if (a>0)
+			{
+				s=s+",";
+			}
+			s=s+args[a];
+			a++;
+		}
+		
+		return s;
+	}
+	
+	
+	
+	void createSterowanieReport(OptimizerEV.Sterowanie sterowanie, ProsumentEV prosumentEV,OptimizerEV.Form24 form24)
+	{
+		String pathToFolder =scenarioFolder+"\\"+prosumentEV.getID()+"\\predykcje\\"+LokalneCentrum.getCurrentDay();
+		createFolderCascade(pathToFolder);
+		
+		
+		String pathToFile = pathToFolder+"\\"+LokalneCentrum.getCurrentHour().replaceAll(":", "_")+".csv";
+		
+		try {
+			Writer writer = new FileWriter(pathToFile);
+			
+			//String ReportHeader = createSterowanieReportHeader(prosumentEV,sterowanie);
+			
+			writerWriteLine(writer,createSterowanieReportHeaderProsumentHeader(prosumentEV));
+			//writerWriteLine(writer, ReportHeader);
+			
+			
+			addSeperator(writer);
+			writerWriteLine(writer,createSterowanieReportDataHeader(sterowanie));
+			
+			ArrayList<DayData> dList = sterowanie.getDayDataList();
+			ArrayList<ArrayList<EVData>> eVList =sterowanie.geteVDataList();
+			
+			int i=0;
+			while (i<Stale.horyzontCzasowy)
+			{
+				DayData d =dList.get(i);
+				String dayDataline = createSterowanieReportDayDataLine(d);
+				
+				String lineToBePut=dayDataline+",,"+evLines(eVList,i,form24)+",,"+kosztyLines(sterowanie,i);
+				//String lineToBePut=dayDataline+",";
+				
+				writerWriteLine(writer, lineToBePut);
+				i++;
+				
+			}
+			
+			writer.close();
+		}catch (Exception e){
+			print("Error createSterowanieReport "+e.getMessage());
+			
+		}
+		
+		//getInput("createSterowanieReport -end");
+ 
+	}
+	
+	private String kosztyLines(OptimizerEV.Sterowanie sterowanie, int t) {
+		
+		double[] koszty = sterowanie.getKoszt();
+		double[] koszty_Zew = sterowanie.getKoszt_Zew();
+		double[] koszty_sklad = sterowanie.getKoszt_sklad();
+		double[] koszty_EV = sterowanie.getKoszt_EV();
+		
+		
+		
+		// TODO Auto-generated method stub
+		return stringSeries(""+koszty[t],""+koszty_Zew[t],""+koszty_sklad[t],""+koszty_EV[t] );
+	}
+
+	private String evLines(ArrayList<ArrayList<EVData>> eVList, int t, OptimizerEV.Form24 form24) 
+	{	
+		int i=0;;
+		String s="";
+		
+		//przejscie po samochodach
+		while(i<eVList.size())
+		{
+			//print(i);
+			
+			if (i>0)
+			{
+				s+=",,";
+			}
+			
+			ArrayList<Integer> statusList = form24.getStatusEV().get(i);
+			ArrayList<EVData> eVListSingle =eVList.get(i);
+			s+=evLine(eVListSingle,t,statusList);
+			
+			
+			i++;
+		}
+		
+		return s;
+	}
+
+	private String evLine(ArrayList<EVData> eVListSingle, int t,ArrayList<Integer> statusList) 
+	{
+		
+		if (eVListSingle==null)
+		{
+			getInput("Error in evLine");
+		}
+		
+		EVData e =eVListSingle.get(t);
+		String s=stringSeries(e.getEVdom(),e.getEB_EVdom(),e.getEVdom_EB(),e.getZew_EVdom(),e.getG_EVdom(),e.getEVdom_c());
+		
+		s+=","+statusList.get(t);
+		return s;
+	}
+
+	String stringAndLineSeparator(String s)
+	{
+		
+		return s+System.lineSeparator();
+	}
+	
+	String createSterowanieReportHeaderProsumentHeader(ProsumentEV prosument)
+	{
+		String s="";
+		
+		s+=stringAndLineSeparator("scenariusz,"+Stale.scenariusz);
+		
+		//format formatek ma linie na day i hour wiec tu tez je zostaw
+		s+=stringAndLineSeparator("Day,Leave this empty");
+		s+=stringAndLineSeparator("Hour,Leave this empty");
+		s+=stringAndLineSeparator("ID,"+prosument.getID());
+		s+=stringAndLineSeparator("Cena Zewnetrzna,"+Stale.cenaDystrybutoraZewnetrznego);
+		s+=stringAndLineSeparator("Cena Baterii,"+floatToString(Stale.kosztAmortyzacjiBaterii));
+		
+		s+=stringAndLineSeparator("Cena Akumulatora,"+floatToString(Stale.kosztAmortyzacjiAkumulatoraEV));
+		s+=stringAndLineSeparator("Energia na podroz,"+floatToString(Stale.podrozMinimumEnergii));
+		s+=stringAndLineSeparator("Mnoznik,"+floatToString(prosument.getMnoznikGeneracji()));
+		s+=stringAndLineSeparator("Koszt calkowity,"+floatToString(prosument.getTotalCost()));
+		s+=stringAndLineSeparator("Koszt calkowity,"+floatToString(prosument.getTotalCost()));
+
+		s+=stringAndLineSeparator("Caklowite zuzycie,"+floatToString(prosument.getTotalConsumption()));
+		s+=stringAndLineSeparator("Calkowita generacja,"+floatToString(prosument.getTotalGeneration()));
+		s+=stringAndLineSeparator("Unused generacja,"+floatToString(prosument.getTotalUnusedGeneration()));
+		s+=stringAndLineSeparator("Reserve bonus,"+floatToString(prosument.getReserveBonus()));
+		s+=stringAndLineSeparator("Cost no reserve,"+prosument.getCostNoReserve());
+		s+=stringAndLineSeparator("Report note,"+prosument.getReportNote());
+
+		return s;
+
+	}
+	
+	String createSterowanieReportHeaderEVDataHeader(int i)
+	{
+		String s=stringSeries("EB_"+i,"EB_EV_"+i,"EV_EB"+i,"Zew_EV"+i,"G_EV"+i,"EV_c"+i,"Status_"+i);
+		return s;
+	}
+	
+	String createSterowanieReportDataHeader(OptimizerEV.Sterowanie sterowanie)
+	{
+		String s=dataHeader();
+				
+		ArrayList<ArrayList<EVData>>L1 = sterowanie.geteVDataList();
+		
+		int i=0;
+		while (i < L1.size())
+		{
+			s+=",,"+createSterowanieReportHeaderEVDataHeader(i);
+			//print("createSterowanieReportHeader "+i);
+			i++;
+		}
+		
+		s+=",,Koszt(opt),KosztZew,KosztSklad,KosztEV";
+		
+		return s;
+	}
+	
+	String createSterowanieReportDayDataLine(DayData d)
+	{
+		String line = stringSeries(d.getDay(),d.getHour(),floatToString(d.getConsumption()),floatToString(d.getGeneration()),floatToString(d.getTrueGeneration()),"");
+		line+=","+stringSeries(floatToString(d.getStanBateriiNaPoczatkuSlotu()),floatToString(d.getStanBateriiNaKoniecSlotu()),"",floatToString(d.getZBateriiNaKonsumpcje()),floatToString(d.getZBateriiNaRynek()),"");
+		line+=","+stringSeries(floatToString(d.getZGeneracjiNaKonsumpcje()),floatToString(d.getZGeneracjiNaRynek()),floatToString(d.getZGeneracjiDoBaterii()),"");
+		line+=","+stringSeries(floatToString(d.getZRynekNaKonsumpcje()),floatToString(d.getZRynekDoBaterii()),"");
+		line+=","+stringSeries(floatToString(d.getCenaNaLokalnymRynku()),floatToString(d.getCost()),floatToString(d.getUnusedGeneration()),floatToString(d.getKupuj()) );
+		
+		return line;
+		
+	}
+	
+	String dataHeader()
+	{
+		String header1 ="Day,Hour,Konsumpcja,Generacja,Generacja(True),,stanBateriiNaPoczatkuSlotu,stanBateriiNaKoniecSlotu,,zBateriiNaKonsumpcje,zBateriiNaRynek,";
+		String header2 ="zGeneracjiNaKonsumpcje,zGeneracjiNaRynek,zGeneracjiDoBaterii,,zRynekNaKonsumpcje,zRynekDoBaterii,,cenaLokalna,koszt,unusedGeneration,kupuj";
+		return header1+","+header2;
+	}
+
+	
+	public void createProsumentReport(ProsumentEV prosumentEV)
+	{
+		String pathToFile =scenarioFolder+"\\"+"agregate"+"\\"+prosumentEV.getID()+".csv";
+		if (prosumentEV.getID()<=liczbaProsumentow)
+		{
+			pathToFile =scenarioFolder+"\\"+prosumentEV.getID()+"\\prosument_"+prosumentEV.getID()+".csv";	
+		}
+		
+		try {
+			Writer writer = new FileWriter(pathToFile);
+						
+			ArrayList<DayData> dList = prosumentEV.getDayDataList();
+			
+			ArrayList<ArrayList<EVData>> EVList = prosumentEV.getListaPodrozyFlota();
+			
+			
+			ArrayList<EVData> test =EVList.get(0);
+			
+			
+			writerWriteLine(writer,createSterowanieReportHeaderProsumentHeader(prosumentEV));
+			
+			
+			addSeperator(writer);
+			writerWriteLine(writer,createSterowanieReportDataHeader(EVList.size()));
+			
+			
+			
+			String dateAhead=dList.get(0).getDay()+" "+dList.get(0).getHour();
+			
+		
+			int i=0;
+			while (!dateAhead.equals(simulationEndDate))
+			{
+				//print("dateAhead "+dateAhead);
+				
+				
+				DayData d =dList.get(i);
+				String dayDataline = createSterowanieReportDayDataLine(d);
+				
+				String lineToBePut=dayDataline+",,"+evLines(EVList,i)+",,"+kosztyLines(prosumentEV,i);
+				//String lineToBePut=dayDataline+",";
+				
+				writerWriteLine(writer, lineToBePut);
+				
+				i++;
+				
+				dateAhead=dList.get(i).getDay()+" "+dList.get(i).getHour();
+
+			}
+			
+			writer.close();
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}		
+		
+	}
+	
+	String createSterowanieReportDataHeader(int liczbaSamochodowElektrycznych)
+	{
+		String s=dataHeader();
+		
+		int i=0;
+		while (i < liczbaSamochodowElektrycznych)
+		{
+			s+=",,"+createSterowanieReportHeaderEVDataHeader(i);
+			//print("createSterowanieReportHeader "+i);
+			i++;
+		}
+		
+		s+=",,Koszt(opt),KosztZew,KosztSklad,KosztEV";
+		
+		return s;
+	}
+	
+	private String evLines(ArrayList<ArrayList<EVData>> eVList, int t) 
+	{	
+		int i=0;;
+		String s="";
+		
+		//przejscie po samochodach
+		while(i<eVList.size())
+		{
+			//print(i);
+			
+			if (i>0)
+			{
+				s+=",,";
+			}
+			
+			ArrayList<EVData> eVListSingle =eVList.get(i);
+			s+=evLine(eVListSingle,t);
+			
+			
+			i++;
+		}
+		
+		return s;
+	}
+	
+	private String evLine(ArrayList<EVData> eVListSingle, int t) 
+	{
+		
+		if (eVListSingle==null)
+		{
+			getInput("Error in evLine");
+		}
+		
+		EVData e =eVListSingle.get(t);
+		String s=stringSeries(e.getEVdom(),e.getEB_EVdom(),e.getEVdom_EB(),e.getZew_EVdom(),e.getG_EVdom(),e.getEVdom_c());
+		
+		s+=","+e.getStatus();
+		return s;
+	}
+	
+	private String kosztyLines(ProsumentEV prosumentEV,int t) {
+		
+		ArrayList<Float > koszty = prosumentEV.getKoszty();
+		
+		
+		String stringToBeReturned = stringSeries("-1","-1","-1","-1");
+		if (t<koszty.size())
+		{
+			ArrayList<Float> koszty_Zew = prosumentEV.getKoszty_Zew();
+			ArrayList<Float> koszty_Sklad = prosumentEV.getKoszty_sklad();
+			ArrayList<Float> koszty_Ev = prosumentEV.getKoszty_EV();
+		
+			stringToBeReturned= stringSeries(koszty.get(t),koszty_Zew.get(t),koszty_Sklad.get(t),koszty_Ev.get(t));
+			//getInput(" kosztyLines - uzupelnij");
+		}
+		
+		
+		
+		/*
+		double[] koszty = sterowanie.getKoszt();
+		double[] koszty_Zew = sterowanie.getKoszt_Zew();
+		double[] koszty_sklad = sterowanie.getKoszt_sklad();
+		double[] koszty_EV = sterowanie.getKoszt_EV();*/
+		
+		
+		
+		// TODO Auto-generated method stub
+		return stringToBeReturned;
+		//return stringSeries(""+koszty[t],""+koszty_Zew[t],""+koszty_sklad[t],""+koszty_EV[t] );
+	}	
 	
 	
 }

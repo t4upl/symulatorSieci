@@ -24,12 +24,6 @@ public class Rynek extends CoreClass {
 	
 	//uzywana do ograniczenia ilosci komunikatow miedzy rynkiem a prosumentami
 	int iteracja;
-	
-	//jezeli funkcja rynku nie ma przeciecia z osia x to nie ma sensu prowadzic handlu
-	//continuation status okresla jako 0 - jest przeciecie,  1- funkcja stale nad
-	//ustaiwane przy pierwszym rozeslaniu cen
-	//ustawiane w f:"ustawContinuationStatus"
-	//int continuationStatus;
 
 	//limit iteracji rynek -podjae cene, prosument odpowiada
 	//w sklad limitu nie whchodzi pierwsza cena (podanie 3 predykcji)

@@ -33,7 +33,18 @@ public class Agregator {
 		
 		prosument.DayDataDivide(Stale.liczbaProsumentow);
 		
-		prosument.performEndOfSimulationCalculations(false);
+		if (prosument instanceof ProsumentEV)
+		{
+			//trzeba przeskalowac wyniki samochodow elektyrcznych, bo inaczej przy liczeniu rezerwy
+			//w "performEndOfSimulationCalculations" bedize zle (odejmowanien nieprzeskalowanej rekompensatyz a baterie od przeskalowanego kosztu)
+			((ProsumentEV)prosument).EVDataDivide(Stale.liczbaProsumentow);
+			prosument.performEndOfSimulationCalculations();
+		}
+		else
+		{
+			prosument.performEndOfSimulationCalculations(false);
+		}
+		
 		reporter.createProsumentReport(prosument);
 	}
 	

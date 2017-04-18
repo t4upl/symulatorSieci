@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 
 public class CoreClass {
 
@@ -24,5 +25,16 @@ public class CoreClass {
 	public void print(float s)
 	{
 		print(s+"");
+	}
+	
+	public <T> void print (ArrayList<T> L1)
+	{
+		print("printing List\n");
+		int i=0;
+		while (i<L1.size())
+		{
+			System.out.println(i+"# "+L1.get(i));
+			i++;
+		}
 	}
 }

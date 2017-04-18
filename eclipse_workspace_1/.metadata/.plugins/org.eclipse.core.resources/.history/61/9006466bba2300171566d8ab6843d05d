@@ -1,0 +1,66 @@
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class OptimizerEV extends CoreClass {
+
+	
+	//set it to false for test (test =no EVs)
+	final Boolean EVwystpeujeWmodelu =true;
+
+	IloCplex cplex;
+	
+	//Singleton part
+	private static OptimizerEV instance = null;
+	private OptimizerEV() 
+	{
+	}
+	
+	public static OptimizerEV getInstance() {
+	      if(instance == null) {
+	         instance = new OptimizerEV();
+	      }
+	      return instance;
+	}
+	
+	public static class Sterowanie
+	{
+		
+	}
+	
+	public static class Form
+	{
+		ArrayList<Float> prices = new ArrayList<>();
+		ArrayList<Float> consumption = new ArrayList<>();
+		ArrayList<Float> generation = new ArrayList<>();
+		
+		ArrayList<Integer> statusyEV = new ArrayList<>();
+		
+		
+		public ArrayList<Float> getConsumption() {
+			return consumption;
+		}
+		public void setConsumption(ArrayList<Float> consumption) {
+			this.consumption = consumption;
+		}
+		public ArrayList<Float> getGeneration() {
+			return generation;
+		}
+		public void setGeneration(ArrayList<Float> generation) {
+			this.generation = generation;
+		}
+		public ArrayList<Integer> getStatusyEV() {
+			return statusyEV;
+		}
+		public void setStatusyEV(ArrayList<Integer> statusyEV) {
+			this.statusyEV = statusyEV;
+		}
+		
+	}
+	
+	//---------------------------
+	
+	
+	
+	
+	
+}

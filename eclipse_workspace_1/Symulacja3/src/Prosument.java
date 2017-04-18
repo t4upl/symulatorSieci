@@ -8,11 +8,11 @@ import java.util.ArrayList;
 
 public class Prosument extends CoreClass {
 	float stosunekGeneracjiDoKonsumpcji=0f;
-	private ArrayList<DayData> dayDataList = new ArrayList<DayData>();
+	protected ArrayList<DayData> dayDataList = new ArrayList<DayData>();
 	
 	
 	//W Virtual Prosument handel jest zawsze na false
-	private int ID;
+	protected int ID;
 	private float cenaDystrybutoraZewnetrznego=Stale.cenaDystrybutoraZewnetrznego;
 	private float mnoznikGeneracji=0f;
 	
