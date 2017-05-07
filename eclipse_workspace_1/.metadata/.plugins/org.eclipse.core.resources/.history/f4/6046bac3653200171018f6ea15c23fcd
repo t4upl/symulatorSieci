@@ -1,0 +1,49 @@
+import java.util.ArrayList;
+
+public class ListaProsumentowWrap extends CoreClass {
+
+	private ArrayList<Prosument> listaProsumentow = new ArrayList<>();
+
+	//Singleton shit
+	private static ListaProsumentowWrap instance = null;
+	private ListaProsumentowWrap() 
+	{
+	}
+	
+	public static ListaProsumentowWrap getInstance() {
+	      if(instance == null) {
+	         instance = new ListaProsumentowWrap();
+	      }
+	      return instance;
+	}
+	
+	public void modyfikatorScenariusza()
+	{
+		getInput("modyfikatorScenariusza");
+		
+		mnoznikGeneracji =getMnoznik();
+		
+		switch (Stale.scenariusz)
+		{
+			case 1: scenario1(); break;
+			case 2: scenario2(); break;
+			case 3: scenario3(); break;
+			case 4: scenario4(); break;
+			case 5: scenario5(); break;
+			case 6: scenario6(); break;
+			
+			//scenariusz EV
+			case 17: scenario17(); break;
+			case 18: scenario18(); break;
+			case 19: scenario19(); break;
+			case 20: scenario20(); break;
+			case 21: scenario21(); break;
+			case 22: scenario22(); break;
+			case 23: scenario23(); break;
+			
+			default: System.out.println("!!!NO SUCH SCENARIO"); getInput();
+		}
+		
+		
+	}
+}

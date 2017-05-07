@@ -84,6 +84,45 @@ public class Agregator extends CoreClass {
 	
 	void createAgregateReport(int ID, Integer[] indexArray, String reportNote)
 	{
+		if (Stale.isScenariuszEV)
+		{
+			createAgregateReportEV(ID,indexArray,reportNote);
+		}
+		else
+		{
+			createAgregateReportNoEV(ID, indexArray, reportNote);
+		}
+	}
+	
+	void createAgregateReportEV(int ID, Integer[] indexArray, String reportNote)
+	{
+		ProsumentEV prosument2 = createNewProsumentEV(ID);
+		prosument2.setReportNote(reportNote);
+		
+		int i=0;
+		while (i<indexArray.length)
+		{	
+			int IDdodawanegoProsumenta =indexArray[i];
+			Prosument dodawanyProsument =listaProsumentow.get(IDdodawanegoProsumenta);
+			
+			addProsument(prosument2,dodawanyProsument,IDdodawanegoProsumenta  );
+			
+			if (dodawanyProsument instanceof ProsumentEV)
+			{
+				prosument2.addProsumentEV((ProsumentEV)dodawanyProsument,IDdodawanegoProsumenta );	
+			}	
+			i++;
+		}
+		
+		prosument2.DayDataDivide(indexArray.length);
+		prosument2.EVDataDivide(indexArray.length);
+		
+		prosument2.performEndOfSimulationCalculations(false);
+		reporter.createProsumentReport(prosument2);
+	}
+	
+	void createAgregateReportNoEV(int ID, Integer[] indexArray, String reportNote)
+	{
 		Prosument prosument2 = createNewProsument(ID);
 		prosument2.setReportNote(reportNote);
 		
@@ -115,6 +154,17 @@ public class Agregator extends CoreClass {
 		
 	}
 	
+	ProsumentEV createNewProsumentEV(int ID)
+	{
+		int rozmiarDayDataList = listaProsumentow.get(0).getDayDataList().size();
+		
+		ProsumentEV prosument = new ProsumentEV();
+		prosument.setID(ID);
+		prosument.createEmptyDataList(rozmiarDayDataList);
+		
+		return prosument;
+	}
+	
 	//stowrz prostego rposumenta  z putsymi (zeorwymi) DayData w DayDataList
 	Prosument createNewProsument(int ID)
 	{
@@ -142,23 +192,8 @@ public class Agregator extends CoreClass {
 			DayData dayData = dayDataList.get(a);
 			DayData dayData2 = dayDataList2.get(a);
 			
-			if (a==21 && isDebug)
-			{
-				print("\nhello\n#21 "+prosument2.getID());
-				print (dayData.getCost());
-				print (dayData2.getCost());
-				getInput();
-			}
-			
 			addDayData(dayData,dayData2,ID,a);
-			
-			if (a==21 && isDebug)
-			{
-				print("#21 "+prosument2.getID());
-				print (dayData.getCost());
-				getInput();
-			}
-			
+	
 			a++;
 		}
 	}

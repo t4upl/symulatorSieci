@@ -1,0 +1,96 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.ArrayList;
+
+public class Loader extends CoreClass {
+
+	//Singleton shit
+	private static Loader instance = null;
+	private Loader() 
+	{
+	}
+	
+	public static Loader getInstance() {
+	      if(instance == null) {
+	         instance = new Loader();
+	      }
+	      return instance;
+	}
+	
+	
+	public ArrayList<String> loadDayHourList()
+	{
+		ArrayList<String> outputList = new ArrayList<>();
+		
+		String pathToData=Stale.folderZDanymi+"\\zuzycie\\1.csv";
+		
+		//dayt zostana wczytae do symualtion end date + liczba dnia
+		int liczbaDodatkowychDni =3;
+		
+		
+		
+		
+		
+		
+		//czy wczytwyanie doszlo do glownego ciala pliku
+        Boolean isBody=false;
+        Boolean isEndDateReached=false;
+        
+        
+        BufferedReader br = null;
+        String line ="";
+        int dodatkoweIndeksy =liczbaDodatkowychDni*24;
+        
+        int i=0;
+
+        
+        try {
+ 			br = new BufferedReader(new FileReader(pathToData));
+ 	        while ((line = br.readLine()) != null)
+ 	        {
+ 	        	if (isBody)
+ 	        	{	
+ 	        		print(line);
+ 	        		
+	        		String[] s2 = line.split(",");
+	        		String dayHour = s2[0];
+
+ 	        		
+ 	        		if (isEndDateReached)
+ 	        		{
+ 	        			i++;
+ 	        			if (i>dodatkoweIndeksy)
+ 	        			{
+ 	        				break;
+ 	        			}
+ 	        		}
+ 	        		else
+ 	        		{
+ 	        			if (dayHour.equals(Stale.simulationEndDate))
+ 	        			{
+ 	        				
+ 	        			}
+ 	        		}
+ 	        	}
+ 	        	else
+ 	        	{
+ 		        	if (line.equals("###"))
+ 		        	{
+ 		        		isBody=true;
+ 		        	}
+ 	        	}
+ 	        }
+ 				
+ 		} catch (Exception e) {
+ 			print("createHoursList EXCEPTION");
+ 			e.printStackTrace();
+ 		}        
+        
+
+		
+		print (pathToData);
+
+		
+		return outputList;
+	}
+}

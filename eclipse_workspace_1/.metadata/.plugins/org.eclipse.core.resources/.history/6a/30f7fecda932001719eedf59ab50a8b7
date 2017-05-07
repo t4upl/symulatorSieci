@@ -1,0 +1,150 @@
+import java.util.ArrayList;
+
+public class ListaProsumentowWrap extends CoreClass {
+
+	//mnoznik generacji dobrnay tak, zeby generacja z prosumentow generujacych energie (pierwszych 4)
+	//byla rowna zuzyciu wszystkich prosumentow
+	double mnoznikGeneracji;
+	
+	private ArrayList<Prosument> listaProsumentow = new ArrayList<>();
+
+	//Singleton shit
+	private static ListaProsumentowWrap instance = null;
+	private ListaProsumentowWrap() 
+	{
+	}
+	
+	public static ListaProsumentowWrap getInstance() {
+	      if(instance == null) {
+	         instance = new ListaProsumentowWrap();
+	      }
+	      return instance;
+	}
+	
+	void stworzProsumentow()
+	{
+		Prosument prosument =null;
+		
+		int i=0;
+		while (i<Stale.liczbaProsumentow)
+		{
+			if (Stale.isScenariuszEV && i<4)
+			{
+				prosument = new ProsumentEV();
+			}
+			else
+			{
+				prosument = new Prosument();
+			}
+			
+			prosument.setID(i);
+			prosument.loadData();
+			
+			listaProsumentow.add(prosument);
+			i++;
+		}
+	}
+	
+	public void modyfikatorScenariusza()
+	{
+		getInput("modyfikatorScenariusza");
+		
+		if (Stale.scenariusz>=Stale.numerPierwszegoScenariuszaZawierajacegoEV)
+		{
+			Stale.isScenariuszEV=true;
+		}
+		else
+		{
+			Stale.isScenariuszEV=false;
+		}
+		
+		stworzProsumentow();
+		
+		mnoznikGeneracji =getMnoznik();
+		
+		switch (Stale.scenariusz)
+		{
+			/*case 1: scenario1(); break;
+			case 2: scenario2(); break;
+			case 3: scenario3(); break;
+			case 4: scenario4(); break;
+			case 5: scenario5(); break;
+			case 6: scenario6(); break;
+			
+			//scenariusz EV
+			case 7: scenario7(); break;
+			case 8: scenario8(); break;
+			case 9: scenario9(); break;
+			case 10: scenario10(); break;
+			case 11: scenario11(); break;
+			case 12: scenario12(); break;
+			case 13: scenario13(); break;*/
+			
+			default: System.out.println("!!!NO SUCH SCENARIO"); getInput();
+		}
+		
+		
+	}
+	
+	//znajduje mnoznik taki ze suma generacji grupy prosumentow == suma konsumpcji grupy 
+	public float getMnoznik()
+	{
+		float sumaGeneracji=0f;
+		float sumaZuzycia=0f;
+		
+		int b=0;
+		while (b<Stale.liczbaProsumentow)
+		{
+			Prosument prosument =listaProsumentow.get(b);
+			
+			if (b<4)
+			{
+				sumaGeneracji+=prosument.obliczCalkowitaGeneracja();
+			}
+			
+			sumaZuzycia+=prosument.obliczCalkowitaKonsumpcje();
+			
+			
+			b++;
+		}
+		
+		//Jezlei scenariusz uwzglednia EV to energia wydana na podroz przez EV jest liczona w skald zuzycia
+		if (Stale.isScenariuszEV)
+		{
+			sumaZuzycia+=obliczZuzycieEnergiinaEV();
+		}
+		
+		float mnoznik = sumaZuzycia/sumaGeneracji;
+		
+		print("mnoznik "+mnoznik);
+		
+		return mnoznik;
+	}
+	
+	//oblicza ilosc energii jaka wydaja wszsycy prosumenci wchdozacy w sklad symualcji na rzecz podrozy EV
+	float obliczZuzycieEnergiinaEV()
+	{
+		float sum=0;
+		
+		int liczbaDni=(LokalneCentrum.getSimulationEndDateIndex()-1)/24;
+		int liczbaProsumenowEV=0;
+		
+		int i=0;
+		while (i<listaProsumentow.size())
+		{
+			if (listaProsumentow.get(i) instanceof ProsumentEV)
+			{
+				liczbaProsumenowEV++;
+			}
+			i++;
+		}
+		
+		print("liczba Dni "+liczbaDni);
+		
+		//2 - dwie podroze dizennie
+		sum =liczbaDni*2*liczbaProsumenowEV*Stale.podrozMinimumEnergii;
+		print("sum "+sum);
+		
+		return sum;
+	}	
+}

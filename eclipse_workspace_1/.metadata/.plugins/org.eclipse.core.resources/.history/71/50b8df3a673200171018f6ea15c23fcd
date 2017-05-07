@@ -1,0 +1,32 @@
+import java.util.ArrayList;
+
+public class Prosument extends CoreClass {
+	
+	protected ArrayList<DayData> dayDataList = new ArrayList<DayData>();
+
+	protected int ID;
+	//active user has: EV, battery or generation
+	private Boolean active=false;
+	
+	Loader loader = Loader.getInstance();
+	
+	
+	
+	public int getID() {
+		return ID;
+	}
+	
+	public void setID(int iD) {
+		ID = iD;
+	}
+	
+	//--------------
+	
+	public void loadData()
+	{
+		
+	}
+	
+	
+	
+}

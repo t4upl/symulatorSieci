@@ -396,7 +396,7 @@ public class Prosument extends CoreClass {
 		}
 		
 		charge();
-		dayDataList.get(timeIndex).countUnusedGeneration();
+		//dayDataList.get(timeIndex).countUnusedGeneration();
 	}
 	
 	void charge()
@@ -854,5 +854,6 @@ public class Prosument extends CoreClass {
 			i++;
 		}
 	}
+	
 	
 }

@@ -2,29 +2,30 @@
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item value="false" key="isRegEx"/>
-		<item value="Form" key="selection"/>
+		<item value="createProsumentReport" key="selection"/>
 		<item value="false" key="casesensitive"/>
 		<item value="false" key="incremental"/>
 		<item value="true" key="wrap"/>
 		<item value="false" key="wholeword"/>
 		<list key="findhistory">
-			<item value="form"/>
-			<item value="handelWPracy"/>
-			<item value="modyfikatorScenariusza"/>
-			<item value="setStatus"/>
-			<item value="createListaPodrozy"/>
-			<item value="EVwystpeujeWmodelu"/>
-			<item value="performEndOfSimulationCalculations"/>
-			<item value="print"/>
+			<item value="createProsumentReport"/>
+			<item value="setZBateriiNaKonsumpcje"/>
+			<item value="addDayData"/>
+			<item value="addProsument"/>
+			<item value="createEmptyDataList"/>
+			<item value="createNewProsumentEV"/>
+			<item value="createSterowanieFillOutReportEVDataLoop"/>
+			<item value="createSterowanieFillOutReportDayDataLoop"/>
 		</list>
 		<list key="replacehistory">
+			<item value="print"/>
 		</list>
 	</section>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
 		<item value="284" key="DIALOG_WIDTH"/>
 		<item value="1|Segoe UI|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI" key="DIALOG_FONT_NAME"/>
-		<item value="391" key="DIALOG_HEIGHT"/>
-		<item value="1252" key="DIALOG_X_ORIGIN"/>
-		<item value="200" key="DIALOG_Y_ORIGIN"/>
+		<item value="390" key="DIALOG_HEIGHT"/>
+		<item value="1138" key="DIALOG_X_ORIGIN"/>
+		<item value="156" key="DIALOG_Y_ORIGIN"/>
 	</section>
 </section>

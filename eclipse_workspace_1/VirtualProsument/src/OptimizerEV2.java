@@ -137,9 +137,7 @@ public class OptimizerEV2 extends CoreClass {
 	{
 		IloNumExpr expr1 =null;
 		
-		//print ("createObjectiveKosztZew -start");
-		//print("Zew_EVdom.size()"+Zew_EVdom.size());
-		
+
 		//przejscie po samochodach
 		int i=0;
 		while (i<Zew_EVdom.size())
@@ -231,7 +229,6 @@ public class OptimizerEV2 extends CoreClass {
 	void dodajOgraniczeniaPoczatkowyStanBaterii()
 	{
 		try{
-			//print ("dodajOgraniczeniaPoczatkowyStanBaterii "+stanPoczatkowyBaterii);
 			cplex.addEq(EB[0], stanPoczatkowyBaterii);
 			int i=0;
 			while (i<stanPoczatkowyEVdom.size())
@@ -862,7 +859,7 @@ public class OptimizerEV2 extends CoreClass {
 		this.predkoscBaterii =prosumentEV.getPredkoscBaterii();
 		this.pojemnoscBaterii = prosumentEV.getPojemnoscBaterii();
 		this.liczbaSamochodow = form24.geteVDataList().size();
-		
+				
 		koszt = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,-reallyBigNumber,reallyBigNumber, cplex);
 		koszt_Zew = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,-reallyBigNumber,reallyBigNumber, cplex);
 		koszt_sklad = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,-reallyBigNumber,reallyBigNumber, cplex);

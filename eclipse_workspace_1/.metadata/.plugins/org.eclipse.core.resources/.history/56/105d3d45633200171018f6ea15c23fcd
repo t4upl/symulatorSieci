@@ -1,0 +1,13 @@
+
+public class Stale {
+
+	static final int scenariusz=1;
+	
+	//okresla czy wykorzystac cenyz  generatora cyz wykorzystac wektor cena z zewnatrz
+	//np z poprzedniej iteracji
+	static final boolean cenyZGeneratora = true;
+	
+	static final String folderZDanymi="C:\\Users\\Administrator\\Desktop\\dane_do_symulacji";
+	static final String outputFolder="C:\\Users\\Administrator\\Desktop\\symulacjaOutput2";
+	
+}

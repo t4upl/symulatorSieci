@@ -6,11 +6,11 @@ public class EVData {
 
 	//stan energii na poczatku slotu
 	float EVdom=0;
-	float EVdom_c; 
-	float EVdom_EB;
-	float EB_EVdom;
-	float G_EVdom;
-	float Zew_EVdom;
+	float EVdom_c=0; 
+	float EVdom_EB=0;
+	float EB_EVdom=0;
+	float G_EVdom=0;
+	float Zew_EVdom=0;
 	
 	
 	
@@ -72,6 +72,7 @@ public class EVData {
 
 	//----------
 	//OTHER FUNCTIONS
+	
 	
 	public String toString()
 	{

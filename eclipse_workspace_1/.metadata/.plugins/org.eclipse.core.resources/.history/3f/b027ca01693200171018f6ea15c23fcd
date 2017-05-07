@@ -1,0 +1,31 @@
+
+public class DayData {
+	
+	
+	private String day;
+	private String hour;
+	private double consumption=0f; //ustawiane Prosument.loadData()
+	private double generation=0f; //ustawiane Prosument.loadData() Bez mnzonika
+	private double trueGeneration=0f; //generation * mnoznik, ustawione przy ustawianu mnoznika
+
+	private double stanBateriiNaPoczatkuSlotu=0f;
+	
+	private double cost=0f;
+
+	
+	//sterowanie
+	private double zBateriiNaKonsumpcje=0f;
+	private double zBateriiNaRynek=0f;
+	
+	private double zGeneracjiNaKonsumpcje=0f;
+	private double zGeneracjiNaRynek=0f;
+	private double zGeneracjiDoBaterii=0f;
+
+	private double zRynekNaKonsumpcje=0f;
+	private double zRynekDoBaterii=0f;
+	
+	private double kupuj=0;
+
+	
+	
+}

@@ -1,0 +1,23 @@
+import java.util.ArrayList;
+
+public class Loader extends CoreClass {
+
+	//Singleton shit
+	private static Loader instance = null;
+	private Loader() 
+	{
+	}
+	
+	public static Loader getInstance() {
+	      if(instance == null) {
+	         instance = new Loader();
+	      }
+	      return instance;
+	}
+	
+	
+	public ArrayList<String> loadDayHourList()
+	{
+		
+	}
+}

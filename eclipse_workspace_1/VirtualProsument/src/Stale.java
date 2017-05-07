@@ -2,7 +2,7 @@
 public class Stale {
 	
 	//dla scenariuszy z EV zawsze nazwa scenariusza+10
-	static final int scenariusz=22;
+	static final int scenariusz=19;
 	static final float cenaDystrybutoraZewnetrznego=0.56f;
 	
 	
@@ -40,7 +40,11 @@ public class Stale {
 	//debug
 	//static final String simulationEndDate="2015-06-03 00:00";
 	
-	
+	static int numerPierwszegoScenariuszaZawierajacegoEV=17;
+
+	//okresla czy w scenariuszu wystepuja EV
+	//nie final bo ustaiwane rpzy modyfikatorze scenariusza
+	static boolean isScenariuszEV;
 	
 	
 	

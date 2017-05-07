@@ -76,6 +76,15 @@ public class ListaProsumentowWrap extends CoreClass {
 	{
 		print("modyfikatorScenariusza "+Stale.scenariusz );
 		
+		if (Stale.scenariusz>=Stale.numerPierwszegoScenariuszaZawierajacegoEV)
+		{
+			Stale.isScenariuszEV=true;
+		}
+		else
+		{
+			Stale.isScenariuszEV=false;
+		}
+		
 		mnoznikGeneracji =getMnoznik();
 		
 		switch (Stale.scenariusz)
@@ -310,9 +319,44 @@ public class ListaProsumentowWrap extends CoreClass {
 			b++;
 		}
 		
+		//Jezlei scenariusz uwzglednia EV to energia wydana na podroz przez EV jest liczona w skald zuzycia
+		if (Stale.isScenariuszEV)
+		{
+			sumaZuzycia+=obliczZuzycieEnergiinaEV();
+		}
+		
 		float mnoznik = sumaZuzycia/sumaGeneracji;
+		
+		
 
 		return mnoznik;
+	}
+	
+	//oblicza ilosc energii jaka wydaja wszsycy prosumenci wchdozacy w sklad symualcji na rzecz podrozy EV
+	float obliczZuzycieEnergiinaEV()
+	{
+		float sum=0;
+		
+		int liczbaDni=LokalneCentrum.getHourList().size()/24;
+		int liczbaProsumenowEV=0;
+		
+		int i=0;
+		while (i<listaProsumentow.size())
+		{
+			if (listaProsumentow.get(i) instanceof ProsumentEV)
+			{
+				liczbaProsumenowEV++;
+			}
+			i++;
+		}
+		
+		print("liczba Dni "+liczbaDni);
+		
+		//2 - dwie podroze dizennie
+		sum =liczbaDni*2*liczbaProsumenowEV*Stale.podrozMinimumEnergii;
+		print("sum "+sum);
+		
+		return sum;
 	}
 	
 	public void tickProsuments()
@@ -343,8 +387,17 @@ public class ListaProsumentowWrap extends CoreClass {
 		{
 			Prosument prosument =listaProsumentow.get(a);
 			prosument.performEndOfSimulationCalculations();
-	
-			reporter.createProsumentReport(prosument);			
+			
+			if (prosument instanceof ProsumentEV)
+			{
+				reporter.createProsumentReport((ProsumentEV)prosument);
+			}
+			else
+			{
+				reporter.createProsumentReport(prosument);
+			}
+			
+						
 			a++;
 		}
 	}
@@ -409,13 +462,14 @@ public class ListaProsumentowWrap extends CoreClass {
 	}
 	
 	public void endSimulationCheck()
-	{
-		print("\nendSimulationCheck -start");
-		
-		endSimulationCheckStaloscHandlu();
+	{		
+		if (Stale.scenariusz<Stale.numerPierwszegoScenariuszaZawierajacegoEV)
+		{
+			endSimulationCheckStaloscHandluNoEV();
+		}
 	}
 	
-	void endSimulationCheckStaloscHandlu()
+	void endSimulationCheckStaloscHandluNoEV()
 	{
 		
 		//ODWROTNIE DayData w zewnetrznej petli, prosumenci w wewnetrznej

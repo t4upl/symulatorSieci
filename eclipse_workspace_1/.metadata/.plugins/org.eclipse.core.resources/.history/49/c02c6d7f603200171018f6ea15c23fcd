@@ -1,0 +1,9 @@
+
+public class Loader {
+
+	
+	public ArrayList<String> loadDayHourList()
+	{
+		
+	}
+}

@@ -1,0 +1,18 @@
+
+public class Rynek {
+
+	RynekHistory rynekHistory =RynekHistory.getInstance();
+
+	//Singleton shit
+	private static RynekHistory instance = null;
+	private RynekHistory() 
+	{
+	}
+	
+   public static RynekHistory getInstance() {
+	      if(instance == null) {
+	         instance = new RynekHistory();
+	      }
+	      return instance;
+	}
+}

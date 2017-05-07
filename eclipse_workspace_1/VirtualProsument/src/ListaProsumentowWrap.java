@@ -68,6 +68,16 @@ public class ListaProsumentowWrap extends CoreClass {
 	
 	public void modyfikatorScenariusza()
 	{
+		
+		if (Stale.scenariusz>=Stale.numerPierwszegoScenariuszaZawierajacegoEV)
+		{
+			Stale.isScenariuszEV=true;
+		}
+		else
+		{
+			Stale.isScenariuszEV=false;
+		}
+		
 		mnoznikGeneracji =getMnoznik();
 		
 		switch (Stale.scenariusz)
@@ -301,9 +311,42 @@ public class ListaProsumentowWrap extends CoreClass {
 			b++;
 		}
 		
+		//Jezlei scenariusz uwzglednia EV to energia wydana na podroz przez EV jest liczona w skald zuzycia
+		if (Stale.isScenariuszEV)
+		{
+			sumaZuzycia+=obliczZuzycieEnergiinaEV();
+		}
+		
 		float mnoznik = sumaZuzycia/sumaGeneracji;
 
 		return mnoznik;
+	}
+	
+	//oblicza ilosc energii jaka wydaja wszsycy prosumenci wchdozacy w sklad symualcji na rzecz podrozy EV
+	float obliczZuzycieEnergiinaEV()
+	{
+		float sum=0;
+		
+		int liczbaDni=LokalneCentrum.getHourList().size()/24;
+		int liczbaProsumenowEV=0;
+		
+		int i=0;
+		while (i<listaProsumentow.size())
+		{
+			if (listaProsumentow.get(i) instanceof ProsumentEV)
+			{
+				liczbaProsumenowEV++;
+			}
+			i++;
+		}
+		
+		print("liczba Dni "+liczbaDni);
+		
+		//2 - dwie podroze dizennie
+		sum =liczbaDni*2*liczbaProsumenowEV*Stale.podrozMinimumEnergii;
+		print("sum "+sum);
+		
+		return sum;
 	}
 	
 	void stworzVirutalProsumentZwyklyScenariusz()
@@ -406,7 +449,8 @@ public class ListaProsumentowWrap extends CoreClass {
 	
 			if (prosument instanceof ProsumentEV)
 			{
-				//getInput("endSimulationReport - prosument IS");
+				
+				((ProsumentEV) prosument).initializeEVDataListSuma();
 				reporter.createProsumentReport((ProsumentEV)prosument);	
 			}
 			else

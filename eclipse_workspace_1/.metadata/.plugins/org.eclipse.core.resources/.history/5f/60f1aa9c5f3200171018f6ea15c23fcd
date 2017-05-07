@@ -1,0 +1,10 @@
+
+public class RynekHistory {
+
+	//Singleton shit
+	private static RynekHistory instance = null;
+	private RynekHistory() 
+	{
+	}
+	
+}

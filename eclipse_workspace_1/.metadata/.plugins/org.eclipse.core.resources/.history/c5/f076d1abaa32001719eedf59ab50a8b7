@@ -1,0 +1,82 @@
+import java.util.ArrayList;
+
+public class Prosument extends CoreClass {
+	
+	protected ArrayList<DayData> dayDataList = new ArrayList<DayData>();
+
+	protected int ID;
+	//active user has: EV, battery or generation
+	private Boolean active=false;
+	
+	
+	float pojemnoscBaterii =0f;//faktyczna pojemnsoc baterii
+	float predkoscBaterii = 0; //ile energii moze przekazac bateria w trakcie slotu czasowego
+	
+	//Singletony
+	Loader loader = Loader.getInstance();
+	
+	
+	
+	public int getID() {
+		return ID;
+	}
+	
+	public void setID(int iD) {
+		ID = iD;
+	}
+	
+	//--------------
+	
+	public void loadData()
+	{
+		dayDataList =loader.loadProsument(ID);
+	}
+	
+	float obliczCalkowitaGeneracja()
+	{
+		float sum=0f;
+		
+		int a=0;
+		DayData d =dayDataList.get(a);
+		String date=d.getDayHour();
+		
+		while (!date.equals(Stale.simulationEndDate))
+		{
+			d =dayDataList.get(a);
+			sum+=d.getGeneration();
+			
+			a++;
+			date = dayDataList.get(a).getDayHour();
+		}
+		
+		return sum;
+	}
+	
+	float obliczCalkowitaKonsumpcje()
+	{
+		float sum=0f;
+		
+		int a=0;
+		DayData d =dayDataList.get(a);
+		String date=d.getDayHour();
+		
+		while (!date.equals(Stale.simulationEndDate))
+		{
+			d =dayDataList.get(a);
+			sum+=d.getConsumption();
+			
+			a++;
+			date = dayDataList.get(a).getDayHour();
+		}
+		return sum;
+	}
+	
+	public void aktywujBaterie()
+	{
+		pojemnoscBaterii=Stale.pojemnoscBateriiIfEnabled;
+		predkoscBaterii = Stale.predkoscBaterii;
+		active=true;
+	}
+	
+	
+}

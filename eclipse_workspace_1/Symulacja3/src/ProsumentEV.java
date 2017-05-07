@@ -9,6 +9,12 @@ public class ProsumentEV extends Prosument {
 	
 	OptimizerEV optimizerEV = OptimizerEV.getInstance();
 	
+	
+	public ArrayList<EVData> getEVDataList()
+	{
+		return this.eVDataList;
+	}
+	
 	@Override
 	public void loadData()
 	{
@@ -95,26 +101,93 @@ public class ProsumentEV extends Prosument {
 	//price vector ma postac (0) -mniejsza cena dla najblizszego slotu, (1) -normlana, (2) -wieksza	
 	public void takeFirstPriceVector(ArrayList<ArrayList<Float>> ListOfPriceVectors)
 	{	
-		getInput("takeFirstPriceVector in ProsumentEV");
+		
+		//getInput("takeFirstPriceVector in ProsumentEV "+ID);
 		Point p1 = null;
 		Point p2 = null;
 		Point p3 = null;
+		
+		Point p1EV = null;
+		Point p2EV = null;
+		Point p3EV = null;
 		
 		ArrayList<Float> priceVector = ListOfPriceVectors.get(1);
 		ArrayList<Float> priceVectorSmallerMod= ListOfPriceVectors.get(0);
 		ArrayList<Float> priceVectorBiggerMod= ListOfPriceVectors.get(2);
 		
-		OptimizerEV.Sterowanie sterowanie = wyznaczSterowanie(priceVector);
+		int transactionIteration = rynek.getIteracja();
+
+		if (priceVector.get(0)== priceVectorBiggerMod.get(0))
+		{
+			getInput("Soemtihns is wrong in takeFirstPriceVector EV");
+		}
+		
+		OptimizerEV.Sterowanie sterowanieForPriceVector = wyznaczSterowanie(priceVector);
+		OptimizerEV.Sterowanie sterowanieForPriceVectorSmallerMod = wyznaczSterowanie(priceVectorSmallerMod);		
+		OptimizerEV.Sterowanie sterowanieForPriceVectorBiggerMod = wyznaczSterowanie(priceVectorBiggerMod);
+
+		
+		reporter.createSterowanieReport(this, sterowanieForPriceVector,"", transactionIteration);
+		reporter.createSterowanieReport(this, sterowanieForPriceVectorSmallerMod,"smaller", transactionIteration);
+		reporter.createSterowanieReport(this, sterowanieForPriceVectorBiggerMod,"bigger", transactionIteration);
+
+		
+		p1 = getPunktFunkcjiUzytecznosci(sterowanieForPriceVector.getDList(),priceVector);
+		p2 = getPunktFunkcjiUzytecznosci(sterowanieForPriceVectorSmallerMod.getDList(),priceVectorSmallerMod);
+		p3 = getPunktFunkcjiUzytecznosci(sterowanieForPriceVectorBiggerMod.getDList(),priceVectorBiggerMod);
+		
+		p1EV = getPunktFunkcjiUzytecznosciEV(sterowanieForPriceVector.getEvList(),priceVector);
+		p2EV = getPunktFunkcjiUzytecznosciEV(sterowanieForPriceVectorSmallerMod.getEvList(),priceVectorSmallerMod);
+		p3EV = getPunktFunkcjiUzytecznosciEV(sterowanieForPriceVectorBiggerMod.getEvList(),priceVectorBiggerMod);
+		
+		rynek.addPricePoint(this,p1);
+		rynek.addPricePoint(this,p2);
+		rynek.addPricePoint(this,p3);
+		
+		rynek.addPricePointEV(this,p1EV);
+		rynek.addPricePointEV(this,p2EV);
+		rynek.addPricePointEV(this,p3EV);
 		
 		
+		//getInput("takeFirstPriceVector -end");
+		
+	}
+	
+	Point getPunktFunkcjiUzytecznosciEV(ArrayList<EVData> L1, ArrayList<Float> priceVector)
+	{
+		Point point = new Point();
+		
+		point.setPrice(priceVector.get(0));	
+		//uncommented for debug
+		EVData ev =L1.get(0);
+		
+		float sprzedaz = ev.getEV_EM();
+		float kupno = ev.getEM_EV();
+		
+		float wolumenEnergii;
+		
+		//0.5, bo blad w reprezentacji floata
+		if (ev.getEVbinKupuj()>0.5)
+		{
+			wolumenEnergii=kupno;
+		}
+		else
+		{
+			wolumenEnergii=-sprzedaz;
+
+		}
+		point.setIloscEnergiiDoKupienia(wolumenEnergii);
+		
+		return point;
 	}
 	
 	OptimizerEV.Sterowanie wyznaczSterowanie (ArrayList<Float> priceVector)
 	{
 		OptimizerEV.Sterowanie sterowanie = new OptimizerEV.Sterowanie();
 		OptimizerEV.Form form =createForm24(priceVector);
+		sterowanie =optimizerEV.wyznaczSterowanie(form);
 		
-		getInput("wyznacz sterownaie -s top");
+		//getInput("wyznacz sterownaie -s top");
 		
 		return sterowanie;
 	}
@@ -122,6 +195,8 @@ public class ProsumentEV extends Prosument {
 	OptimizerEV.Form createForm24(ArrayList<Float> priceVector)
 	{
 		OptimizerEV.Form form = new OptimizerEV.Form();
+		
+		form.setIDprosumenta(ID);
 		
 		ArrayList<Float> generation = new ArrayList<>();
 		ArrayList<Float> consumption = new ArrayList<>();
@@ -147,11 +222,234 @@ public class ProsumentEV extends Prosument {
 		form.setGeneration(generation);
 		form.setStatusyEV(statusy);
 		
+		DayData d = dayDataList.get(LokalneCentrum.getTimeIndex());
+		EVData ev = eVDataList.get(LokalneCentrum.getTimeIndex());
+		
+		form.setStanPoczatkowyEB(d.getStanBateriiNaPoczatkuSlotu());
+		form.setStanPoczatkowyEV(ev.getEV());
+		
+		form.setPrices(priceVector);
+		
+		form.setPojemnoscBaterii(pojemnoscBaterii);
+		
 		
 		return form;
 	}
 	
 	
+	
+	@Override
+	//wez wektor cen przekazany rpzez rynek
+	public void takePriceVector(ArrayList<Float> priceVector)
+	{
+		//getInput("EV take price");
+		
+		
+		Point p1 = null;
+		Point p1EV = null;
+		
+		OptimizerEV.Sterowanie sterowanieForPriceVector = wyznaczSterowanie(priceVector);
+		
+		p1 = getPunktFunkcjiUzytecznosci(sterowanieForPriceVector.getDList(),priceVector);
+		p1EV = getPunktFunkcjiUzytecznosciEV(sterowanieForPriceVector.getEvList(),priceVector);
+		
+		rynek.addPricePoint(this,p1);
+		rynek.addPricePointEV(this,p1EV);
+	}
+	
+	public void getKontrakt(ArrayList<Float> priceVector, DayData constainMarkerDom, DayData constainMarkerEV)
+	{
+		//getInput("getKontrakt");
+		OptimizerEV.Sterowanie sterowanieForPriceVector = wyznaczSterowanieZOgraniczeniamiHandlu(priceVector, constainMarkerDom, constainMarkerEV);
+		
+		//wrzucanie danych ze sterowania do DayDatalist i eVDataList
+		int currentTime = LokalneCentrum.getTimeIndex();
+		
+		ArrayList<DayData> dList =sterowanieForPriceVector.getDList();
+		
+		DayData d =dList.get(0);
+		d.setGeneration(dayDataList.get(currentTime).getGeneration());
+		
+		/*
+		if (ID==1)
+		{
+			print(d.getDay());
+			//getInput("getKontrakt stop");
+		}*/
+		
+		
+		
+		dayDataList.set(currentTime, d);
+		
+		ArrayList<EVData> eList = sterowanieForPriceVector.getEvList();
+		
+		eVDataList.set(currentTime, eList.get(0));
+		
+		//przepisanie baterii w nastepnym slocie
+		eVDataList.set(currentTime+1, eList.get(1));
+		
+		
+
+	}
+	
+	OptimizerEV.Sterowanie wyznaczSterowanieZOgraniczeniamiHandlu (ArrayList<Float> priceVector,DayData constainMarkerDom, DayData constainMarkerEV)
+	{
+		OptimizerEV.Sterowanie sterowanie = new OptimizerEV.Sterowanie();
+		OptimizerEV.Form form =createForm24(priceVector);
+		
+		form.setOgraniczeniaHandluDom(constainMarkerDom);
+		form.setOgraniczeniaHandluEV(constainMarkerEV);
+		
+		sterowanie =optimizerEV.wyznaczSterowanie(form);
+		
+		//getInput("wyznaczSterowanieZOgraniczeniamiHandlu - post Sterowanie");
+		
+		//getInput("wyznacz sterownaie -s top");
+		
+		return sterowanie;
+	}
+	
+	@Override
+	public void performEndOfSimulationCalculations()
+	{
+		
+		//print("performEndOfSimulationCalculations overwritten");
+		totalCost=0;
+		
+		int i=0;
+		String date="";
+		while (!date.equals(Stale.simulationEndDate))
+		{
+			DayData d = dayDataList.get(i);
+			EVData ev = eVDataList.get(i);
+			
+			float costInASlot =(float)ev.getKoszt()+d.getConsumption()*Stale.cenaDystrybutoraZewnetrznego;
+			
+			
+			totalCost+=d.getCost();
+
+			
+			i++;
+			
+			d = dayDataList.get(i);
+			date=d.getDay()+" "+d.getHour();
+		}
+		
+		costNoReserve =totalCost;
+		
+		countReserveBonus();
+	}
+	
+	public void performEndOfSimulationCalculations(Boolean isObliczacKosztWSlotach)
+	{
+		if (isObliczacKosztWSlotach)
+		{
+			performEndOfSimulationCalculations();
+		}
+		else
+		{
+			performEndOfSimulationCalculationsBezObliczaniaKosztu();
+		}
+	}
+	
+	//agregacja
+	void performEndOfSimulationCalculationsBezObliczaniaKosztu()
+	{
+		
+		//print("performEndOfSimulationCalculations overwritten");
+		totalCost=0;
+		
+		int i=0;
+		String date="";
+		while (!date.equals(Stale.simulationEndDate))
+		{
+			DayData d = dayDataList.get(i);
+			totalCost+=d.getCost();
+			
+			i++;
+			
+			d = dayDataList.get(i);
+			date=d.getDay()+" "+d.getHour();
+		}
+		
+		costNoReserve =totalCost;
+		
+		countReserveBonus();
+	}	
+	
+	@Override
+	//odpala sie po wylcizeniu totalnego kosztu 
+	void countReserveBonus()
+	{
+		//print("prosumentEV countReserveBonus");
+		//print("time "+LokalneCentrum.getTimeIndex());
+		
+		reserveBonus = dayDataList.get(LokalneCentrum.getTimeIndex()).getStanBateriiNaKoniecSlotu()*Stale.kosztAmortyzacjiBaterii;
+		
+		//+1 bo stan baterii na koniec slotu, czyli stan z poczatku nastpenego slotu
+		reserveBonus +=eVDataList.get(LokalneCentrum.getTimeIndex()+1).getEV()*Stale.kosztAmortyzacjiAkumulatoraEV;
+		
+		totalCost-=reserveBonus;	
+	}
+	
+	@Override
+	public void createEmptyDataList(int size)
+	{	
+		super.createEmptyDataList(size);
+		
+		int a=0;
+		while (a<size)
+		{
+			EVData ev = new EVData();
+			eVDataList.add(ev);
+			a++;
+		}
+	}
+	
+	//uzywane w agregacji
+	//ID for debug only
+	void addProsumentEV(ProsumentEV prosument,int ID)
+	{
+		//getInput("addProsument "+ID);
+		ArrayList<EVData> eVDataList2 = prosument.getEVDataList();
+		
+		int i=0;
+		while (i<eVDataList.size())
+		{
+			EVData ev = eVDataList.get(i);
+			EVData ev2 = eVDataList2.get(i);
+			
+			ev.setEV(ev.getEV()+ev2.getEV());
+			ev.setEV_c(ev.getEV_c()+ev2.getEV_c());
+			ev.setEV_EB(ev.getEV_EB()+ev2.getEV_EB());
+			ev.setEB_EV(ev.getEB_EV()+ev2.getEB_EV());
+			ev.setG_EV(ev.getG_EV()+ev2.getG_EV());
+			ev.setZew_EV(ev.getZew_EV()+ev2.getZew_EV());
+			
+			ev.setEM_EV(ev.getEM_EV()+ev2.getEM_EV());
+			ev.setEV_EM(ev.getEV_EM()+ev2.getEV_EM());
+			
+			ev.setKoszt(ev.getKoszt()+ev2.getKoszt());
+			ev.setKoszt_EV(ev.getKoszt_EV()+ev2.getKoszt_EV());
+			ev.setKoszt_handel(ev.getKoszt_handel()+ev2.getKoszt_handel());
+			ev.setKoszt_sklad(ev.getKoszt_sklad()+ev2.getKoszt_sklad());
+			ev.setKoszt_Zew(ev.getKoszt_Zew()+ev2.getKoszt_Zew());
+			
+			i++;
+		}
+		
+	}
+	
+	//uzywane w agregacji
+	public void EVDataDivide(int divider)
+	{
+		int a=0;
+		while (a<dayDataList.size())
+		{
+			eVDataList.get(a).divide(divider);
+			a++;
+		}
+	}
 	
 	
 }

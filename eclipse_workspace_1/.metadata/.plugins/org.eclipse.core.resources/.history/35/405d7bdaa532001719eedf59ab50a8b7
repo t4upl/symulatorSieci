@@ -1,0 +1,152 @@
+
+public class DayData {
+	
+	
+	private String day;
+	private String hour;
+	private double consumption=0f; //ustawiane Prosument.loadData()
+	private double generation=0f; //ustawiane Prosument.loadData() Bez mnzonika
+	private double trueGeneration=0f; //generation * mnoznik, ustawione przy ustawianu mnoznika
+
+	private double stanBateriiNaPoczatkuSlotu=0f;
+	
+	private double cost=0f;
+
+	
+	//sterowanie
+	private double zBateriiNaKonsumpcje=0f;
+	private double zBateriiNaRynek=0f;
+	
+	private double zGeneracjiNaKonsumpcje=0f;
+	private double zGeneracjiNaRynek=0f;
+	private double zGeneracjiDoBaterii=0f;
+
+	private double zRynekNaKonsumpcje=0f;
+	private double zRynekDoBaterii=0f;
+	
+	private double kupuj=0;
+
+	public String getDay() {
+		return day;
+	}
+
+	public void setDay(String day) {
+		this.day = day;
+	}
+
+	public String getHour() {
+		return hour;
+	}
+
+	public void setHour(String hour) {
+		this.hour = hour;
+	}
+
+	public double getConsumption() {
+		return consumption;
+	}
+
+	public void setConsumption(double consumption) {
+		this.consumption = consumption;
+	}
+
+	public double getGeneration() {
+		return generation;
+	}
+
+	public void setGeneration(double generation) {
+		this.generation = generation;
+	}
+
+	public double getTrueGeneration() {
+		return trueGeneration;
+	}
+
+	public void setTrueGeneration(double trueGeneration) {
+		this.trueGeneration = trueGeneration;
+	}
+
+	public double getStanBateriiNaPoczatkuSlotu() {
+		return stanBateriiNaPoczatkuSlotu;
+	}
+
+	public void setStanBateriiNaPoczatkuSlotu(double stanBateriiNaPoczatkuSlotu) {
+		this.stanBateriiNaPoczatkuSlotu = stanBateriiNaPoczatkuSlotu;
+	}
+
+	public double getCost() {
+		return cost;
+	}
+
+	public void setCost(double cost) {
+		this.cost = cost;
+	}
+
+	public double getzBateriiNaKonsumpcje() {
+		return zBateriiNaKonsumpcje;
+	}
+
+	public void setzBateriiNaKonsumpcje(double zBateriiNaKonsumpcje) {
+		this.zBateriiNaKonsumpcje = zBateriiNaKonsumpcje;
+	}
+
+	public double getzBateriiNaRynek() {
+		return zBateriiNaRynek;
+	}
+
+	public void setzBateriiNaRynek(double zBateriiNaRynek) {
+		this.zBateriiNaRynek = zBateriiNaRynek;
+	}
+
+	public double getzGeneracjiNaKonsumpcje() {
+		return zGeneracjiNaKonsumpcje;
+	}
+
+	public void setzGeneracjiNaKonsumpcje(double zGeneracjiNaKonsumpcje) {
+		this.zGeneracjiNaKonsumpcje = zGeneracjiNaKonsumpcje;
+	}
+
+	public double getzGeneracjiNaRynek() {
+		return zGeneracjiNaRynek;
+	}
+
+	public void setzGeneracjiNaRynek(double zGeneracjiNaRynek) {
+		this.zGeneracjiNaRynek = zGeneracjiNaRynek;
+	}
+
+	public double getzGeneracjiDoBaterii() {
+		return zGeneracjiDoBaterii;
+	}
+
+	public void setzGeneracjiDoBaterii(double zGeneracjiDoBaterii) {
+		this.zGeneracjiDoBaterii = zGeneracjiDoBaterii;
+	}
+
+	public double getzRynekNaKonsumpcje() {
+		return zRynekNaKonsumpcje;
+	}
+
+	public void setzRynekNaKonsumpcje(double zRynekNaKonsumpcje) {
+		this.zRynekNaKonsumpcje = zRynekNaKonsumpcje;
+	}
+
+	public double getzRynekDoBaterii() {
+		return zRynekDoBaterii;
+	}
+
+	public void setzRynekDoBaterii(double zRynekDoBaterii) {
+		this.zRynekDoBaterii = zRynekDoBaterii;
+	}
+
+	public double getKupuj() {
+		return kupuj;
+	}
+
+	public void setKupuj(double kupuj) {
+		this.kupuj = kupuj;
+	}
+
+	
+	
+	
+}

@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 
 public class CoreClass {
 	
@@ -49,6 +50,20 @@ public class CoreClass {
 		{
 			print(s);
 		}
+	}
+	
+	public <T> ArrayList<T> getNFirstFromList(ArrayList<T> inputList,int liczbaElementow)
+	{
+		ArrayList<T> outputList = new ArrayList<>();
+		
+		int i=0;
+		while (i<liczbaElementow)
+		{
+			outputList.add(inputList.get(i));
+			i++;
+		}
+		
+		return outputList;
 	}
 	
 }

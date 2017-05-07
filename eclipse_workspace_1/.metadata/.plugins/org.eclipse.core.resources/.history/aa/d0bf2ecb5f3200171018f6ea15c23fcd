@@ -1,0 +1,7 @@
+
+public class Rynek {
+
+	RynekHistory rynekHistory =RynekHistory.getInstance();
+
+	
+}

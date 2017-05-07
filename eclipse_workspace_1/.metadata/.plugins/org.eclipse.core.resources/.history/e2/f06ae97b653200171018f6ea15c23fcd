@@ -1,0 +1,25 @@
+import java.util.ArrayList;
+
+public class ListaProsumentowWrap extends CoreClass {
+
+	private ArrayList<Prosument> listaProsumentow = new ArrayList<>();
+
+	//Singleton shit
+	private static ListaProsumentowWrap instance = null;
+	private ListaProsumentowWrap() 
+	{
+	}
+	
+	public static ListaProsumentowWrap getInstance() {
+	      if(instance == null) {
+	         instance = new ListaProsumentowWrap();
+	      }
+	      return instance;
+	}
+	
+	public void modyfikatorScenariusza()
+	{
+		print("modyfikatorScenariusza");
+		
+	}
+}

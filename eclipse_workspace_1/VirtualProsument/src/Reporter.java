@@ -334,7 +334,11 @@ public class Reporter extends CoreClass {
 			{
 				s=s+",";
 			}
-			s=s+args[a];
+			
+			String floatAsString = String.format("%.8f", args[a]);
+
+			
+			s=s+floatAsString;
 			a++;
 		}
 		
@@ -486,6 +490,13 @@ public class Reporter extends CoreClass {
 		return s;
 	}
 	
+	String createSterowanieReportHeaderEVDataHeader(String suffix)
+	{
+		String i =suffix;
+		String s=stringSeries("EB_"+i,"EB_EV_"+i,"EV_EB"+i,"Zew_EV"+i,"G_EV"+i,"EV_c"+i,"Status_"+i);
+		return s;
+	}
+	
 	String createSterowanieReportDataHeader(OptimizerEV.Sterowanie sterowanie)
 	{
 		String s=dataHeader();
@@ -565,6 +576,9 @@ public class Reporter extends CoreClass {
 				String dayDataline = createSterowanieReportDayDataLine(d);
 				
 				String lineToBePut=dayDataline+",,"+evLines(EVList,i)+",,"+kosztyLines(prosumentEV,i);
+				
+				//dodaj sumy do lini
+				lineToBePut+=",,"+evLine(prosumentEV.getEVDataListSuma(),i);
 				//String lineToBePut=dayDataline+",";
 				
 				writerWriteLine(writer, lineToBePut);
@@ -596,6 +610,7 @@ public class Reporter extends CoreClass {
 		}
 		
 		s+=",,Koszt(opt),KosztZew,KosztSklad,KosztEV";
+		s+=",,"+createSterowanieReportHeaderEVDataHeader("S");
 		
 		return s;
 	}

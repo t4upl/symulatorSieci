@@ -115,8 +115,6 @@ public class LokalneCentrum extends CoreClass {
 	void endSimulation()
 	{
 		long timeElapsed =(long) ((System.nanoTime()- simulationStartTime)/(long)Math.pow(10, 9));
-
-		//listaProsumentow2.consistencyCheck();
 		
 		//make all prosuments do the end of simualtion calculations and write report 
 		listaProsumentowWrap.endSimulationReport();

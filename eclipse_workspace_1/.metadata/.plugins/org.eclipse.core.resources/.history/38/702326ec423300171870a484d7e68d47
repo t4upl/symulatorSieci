@@ -1,0 +1,7 @@
+
+public class ProsumentEV extends Prosument {
+
+	//lista zawiera dane dotyczace uzycia akumualtorow EV
+	private ArrayList<EVData> eVDataList = new ArrayList<>(); 
+	
+}

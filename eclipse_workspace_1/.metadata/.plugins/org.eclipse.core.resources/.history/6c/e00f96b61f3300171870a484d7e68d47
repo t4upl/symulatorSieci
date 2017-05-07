@@ -1,0 +1,21 @@
+
+public class Agregator {
+
+	//SYSTEM
+	Reporter reporter = Reporter.getInstance();
+
+	
+	//Singleton shit
+	private static Agregator instance = null;
+	private Agregator() 
+	{
+	}
+	
+	public static Agregator getInstance() {
+	      if(instance == null) {
+	         instance = new Agregator();
+	      }
+	      return instance;
+	}
+	
+}

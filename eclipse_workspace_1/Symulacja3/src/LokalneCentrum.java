@@ -37,6 +37,7 @@ public class LokalneCentrum extends CoreClass {
 	//start symualcji
 	private long simulationStartTime;
 	
+	//w ktorym slocie teraz sie znajduje
 	static private int timeIndex;
 
 	//Singleton shit
@@ -77,7 +78,31 @@ public class LokalneCentrum extends CoreClass {
 	{
 		String[] s2 =hourList.get(timeIndex).split(" ");
 		return s2[0];
-	}	
+	}
+	
+	static public String getHour(int index)
+	{
+		if (index<hourList2.size())
+		{
+			return hourList2.get(index);
+		}
+		else
+		{
+			return "HH:HH";
+		}
+	}
+	
+	static public String getDay(int index)
+	{
+		if (index<hourList2.size())
+		{
+			return dayList.get(index);
+		}
+		else
+		{
+			return "DD-DD-DDDD";
+		}
+	}
 	
 	//--------------------
 	//SETTERS
@@ -127,6 +152,7 @@ public class LokalneCentrum extends CoreClass {
 		setUpScenarioModifier();
 	}
 	
+	//tylko do testow
 	void setUpScenarioModifier()
 	{
 		if (Stale.scenariusz>100)
@@ -142,11 +168,11 @@ public class LokalneCentrum extends CoreClass {
 		
 		if (Stale.cenyZGeneratora)
 		{
-			s+="\\cenaZGeneratora";
+			s+="cenaZGeneratora";
 		}
 		else 
 		{
-			s+="\\cenaZZewnatrz";
+			s+="cenaZZewnatrz";
 		}
 		
 		return s;
@@ -253,6 +279,10 @@ public class LokalneCentrum extends CoreClass {
 			simulationStep();				
 			a++;
 		}
+		
+		//po koncu symulacji timeIndex wskazuje poza liste 
+		//wiec cofamy go na koniec zeby wskazywal ostatni element
+		timeIndex--;
 	}
 	
 	//TODO simulation step
@@ -310,15 +340,19 @@ public class LokalneCentrum extends CoreClass {
 	void endSimulation()
 	{
 		long timeElapsed =(long) ((System.nanoTime()- simulationStartTime)/(long)Math.pow(10, 9));
-		print("Simulation time "+timeElapsed);
+		print("Simulation time "+timeElapsed+"\n");
+
 
 		listaProsumentowWrap.endSimulationCheck();
-		
+				
 		//make all prosuments do the end of simualtion calculations and write report 
 		listaProsumentowWrap.endSimulationReport();
 		
+		
+
 		Agregator agregator =Agregator.getInstance();
 		agregator.run();
+			
 		
 		if (handel)
 		{

@@ -84,14 +84,15 @@ public class RynekHistory extends CoreClass {
    //--------------------
    //OTHER FUNCTIONS
 	
-	public void reset()
+	public void reset(int liczbaHandlowcow)
 	{
 		reportHandelResults = new ArrayList<>();
 		historyListaFunkcjiUzytecznosci = new ArrayList<ArrayList<ArrayList<Point>>>();
 		
 		int a=0;
-		while (a<Stale.liczbaProsumentow)
+		while (a<liczbaHandlowcow)
 		{
+			//nie mam pojecia do czego jest ta linia
 			reportHandelResults.add(new Point());
 			historyListaFunkcjiUzytecznosci.add(new ArrayList<ArrayList<Point>>());
 			a++;
@@ -146,7 +147,24 @@ public class RynekHistory extends CoreClass {
 	//tworzy plik pokazujacy jak zmienialy sie funkcje uzytecznsci w kolejnych iteracjach
 	public void reportHistorieCen()
 	{
-		reporter.createPointHistoryReport(historyListaFunkcjiUzytecznosci);
+		
+		if (Stale.isScenariuszEV)
+		{
+			//print ("reportHistorieCen "+historyListaFunkcjiUzytecznosci.size());
+			
+			int i=0;
+			while (i<historyListaFunkcjiUzytecznosci.size())
+			{
+				reporter.createPointHistoryReportVer2(historyListaFunkcjiUzytecznosci, i);
+				i++;
+			}
+
+		}
+		else
+		{
+			reporter.createPointHistoryReport(historyListaFunkcjiUzytecznosci );
+		}
+		
 	}
 	
 	//tworzy plik z sotatecnzymi wynikami handlu
@@ -162,12 +180,14 @@ public class RynekHistory extends CoreClass {
 	
 	public void createFirstPriceVSFinalPriceReport()
 	{
-		int i=0;
+		/*
+		 * nie wiem po co to tu bylo? - prawdopodobnie wczensiej byla gorsza logika
+		 * int i=0;
 		while (i<koniecHandluList.size())
 		{
 			
 			i++;
-		}
+		}*/
 		
 		reporter.reportPierwszeCeny(historyDeclaredPrice, historyFinalPrice, historyWolumenHandlu, koniecHandluList);
 	}

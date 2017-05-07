@@ -5,6 +5,9 @@ import java.util.Arrays;
 
 public class Rynek extends CoreClass {
 
+	//sprawddza czy 
+	Boolean isAlfaCheck =false;
+	
 	private int liczbaProsumentow=Stale.liczbaProsumentow;
 	
 	//lista punktow przekazana przez prosumentow
@@ -81,6 +84,36 @@ public class Rynek extends CoreClass {
 		}
 	}
 	
+	//zwraca ile kont nalezy utworzyc
+	//dla scenariusz bez EV = 16 (jedno na prosuemnta)
+	//dla scenraiusz z EV =20 (16+ 4 -dla kazdego EV)
+	int obliczLiczbaKont()
+	{
+		ListaProsumentowWrap listaProsumentowWrap= ListaProsumentowWrap.getInstance();
+		ArrayList<Prosument> listaProsumentow = listaProsumentowWrap.getListaProsumentow();
+		
+		int sum=0;
+		
+		int i=0;
+		while (i<listaProsumentow.size())
+		{
+			Prosument prosument = listaProsumentow.get(i);
+			
+			if (prosument instanceof ProsumentEV)
+			{
+				sum+=2;
+			}
+			else
+			{
+				sum++;
+			}
+			
+			i++;
+		}
+		
+		return sum;
+	}
+	
 	//Odpalanae na poczatku kazdego simulationStepu
 	public void reset()
 	{
@@ -90,8 +123,12 @@ public class Rynek extends CoreClass {
 		
 		listaFunkcjiUzytecznosci = new ArrayList<ArrayList<Point>>();
 
+		//dla scenariuszy nie psoiadajacych EV 
+		int liczbaHandlowcow=obliczLiczbaKont();
+	
+		
 		int a=0;
-		while (a<Stale.liczbaProsumentow)
+		while (a<liczbaHandlowcow)
 		{
 			listaFunkcjiUzytecznosci.add(new ArrayList<Point>());
 			a++;
@@ -99,7 +136,7 @@ public class Rynek extends CoreClass {
 		
 		priceVectorsList = new ArrayList<ArrayList<Float>>();
 		
-		rynekHistory.reset();
+		rynekHistory.reset(liczbaHandlowcow);
 		
 	}
 	
@@ -217,6 +254,7 @@ public class Rynek extends CoreClass {
 		float cenaMinimalnaNaRynkuLokalnym= Stale.cenaMinimalnaNaRynkuLokalnym;
 		float cenaMaksymalnaNaRynkuLokalnym = Stale.cenaDystrybutoraZewnetrznego;
 		
+		//tu siedzi to rozroznienie czy z generatora czy predykcja z poprzendiej symualcji
 		ArrayList<Float> normalnaPredykcja = pierwszaPredykcja();
 		priceVectorsList.add(normalnaPredykcja);
 		
@@ -304,6 +342,31 @@ public class Rynek extends CoreClass {
 		
 	}
 	
+	//dodaje punkt do konta kaumulatora EV
+	public void addPricePointEV(ProsumentEV prosumentEV, Point point)
+	{
+		int idListy = prosumentEV.getID()-1;
+		
+		//konta EV znajduja sie po kontach prosumentow
+		idListy+=ListaProsumentowWrap.getInstance().getListaProsumentow().size();
+		
+		ArrayList<Point> pointList = listaFunkcjiUzytecznosci.get(idListy);		
+		
+		if (pointList.size()==0)
+		{
+			pointList.add(point);
+		}
+		else
+		{
+			addPricePointAndListNotEmpty(prosumentEV, point, pointList);
+		}
+		
+		rynekHistory.addPointToHistoryFunkcjaUzytecznosci(idListy, listaFunkcjiUzytecznosci);
+		
+		
+		
+	}
+	
 	//this checks if price that prosuemnt wants to add is already on list (if it is adding shoudl be ignored)
 	Boolean checkIfPriceExist(ArrayList<Point> pointList ,float  price)
 	{
@@ -335,7 +398,7 @@ public class Rynek extends CoreClass {
 		float beta = p1.getIloscEnergiiDoKupienia()-alfa * p1.getPrice();
 		
 		//sprawdza sensownosc
-		if (alfa > Stale.malaLiczba)
+		if (alfa > Stale.malaLiczba && isAlfaCheck)
 		{
 			
 			
@@ -437,12 +500,7 @@ public class Rynek extends CoreClass {
 	//TODO wyznacz cene
 	public void wyznaczCeneAndBroadcast()
 	{
-		//w pierwszej iteracji sprawdz czy jest sens poszukiwac
-		//d keidy wyleciala bisekcja to tez wylecialo
-		/*if (iteracja==0)
-		{
-			ustawContinuationStatus();
-		}*/
+
 		
 		if (iteracja<limitIteracji)
 		{	
@@ -460,6 +518,7 @@ public class Rynek extends CoreClass {
 		}
 		else
 		{
+			//getInput("doszedlem do kontraktow");
 			//getInput("end");
 			if (Stale.scenariusz>100)
 			{
@@ -479,6 +538,9 @@ public class Rynek extends CoreClass {
 			}
 			
 			rynekHistory.createFunkcjeKontraktyReport(b1);
+			
+			
+			//getInput("wyznaczCeneAndBroadcast -rozpisz kontrakty -end");
 			
 		}
 	}
@@ -709,34 +771,6 @@ public class Rynek extends CoreClass {
 		return p;
 	}
 	
-	/*
-	float funkcjaRynku(float cena, Boolean debug, Boolean kontraktReport)
-	{
-		//ustala index dla ktorego point.cena <cena i jest to anjwiekszy tkai indeks
-		int priceIndex = funkcjaRynkuGetIndex(cena);
-		
-		//suma powinna byc ujemna, bo chec sprzedazy w punktach ejst rpzetryzmywnaa jako lcizby ujemne
-		float sumaSprzedazy = funkcjaRynkuSumaSprzedazy(priceIndex,cena);
-		float sumaKupna = funkcjaRynkuSumaKupna(priceIndex,cena);
-		
-		if (kontraktReport)
-		{
-			rynekHistory.kontraktDodajWartoscSumySprzedazy(sumaSprzedazy,cena);
-			rynekHistory.kontraktDodajWartoscSumyKupna(sumaKupna, cena);
-		}
-		
-		if (debug)
-		{
-			print("funkcjaRynku "+cena);
-			print("Suma sprzedazy "+sumaSprzedazy);
-			print("Suma kupna "+sumaKupna);
-			print ("f(x) "+(sumaKupna+sumaSprzedazy));
-			
-			getInput();
-		}
-		
-		return sumaKupna+sumaSprzedazy;
-	}*/
 	
 	
 	float funkcjaRynkuSumaSprzedazy(int index,float cena)
@@ -753,7 +787,11 @@ public class Rynek extends CoreClass {
 	{
 		float sum=0f;
 		int a=0;
-		while (a<Stale.liczbaProsumentow)
+		
+		//print ("funkcjaRynkuSumaXXX "+listaFunkcjiUzytecznosci.size() );
+		
+		//listaFunkcjiUzytecznosci.size() zamiast Stale.liczbaProsumentow, bo dla scenariuszy Ev jest wiecejkont
+		while (a<listaFunkcjiUzytecznosci.size())
 		{
 			//lista punktow prosumenta a
 			ArrayList<Point> L1 =listaFunkcjiUzytecznosci.get(a);
@@ -814,105 +852,7 @@ public class Rynek extends CoreClass {
 		return a;
 	}
 	
-	/*
-	//TODO
-	float wyznaczCeneActual(Boolean debug)
-	{
-		
-		if (LokalneCentrum.getCurrentHour().equals("11:00"))
-		{
-			//print("wyznaczCeneActual iteracja "+iteracja);
-			//getInput("Welcome to 11");
-			//debug=true;
-		}
-		
-		//dane do testowania
-		//mnozone razy debug
-		Boolean welcome = false && debug;
-		Boolean funkcjaRynku = false && debug;
-		Boolean bisectionStep = false && debug;
-		Boolean bisectionEnd = true && debug;
-		Boolean rownomienryPodzial = true && debug;
 
-
-		
-		//printListaFunkcjiUzytecznosci(1);
-		//printListaFunkcjiUzytecznosci(2);
-		
-		//wszystkie ceny sa tkaie same wiec mozna wziac pierwszego prosumenta i od neigo pobrac cene
-		ArrayList<Point> L1 =listaFunkcjiUzytecznosci.get(0);
-		
-		float leftBound = L1.get(0).getPrice();
-		float rightBound = L1.get(L1.size()-1).getPrice();
-		
-		float leftValue =funkcjaRynku(leftBound,funkcjaRynku);
-		float rightValue =funkcjaRynku(rightBound,funkcjaRynku);
-		
-		float srodek=-1;
-		float srodekValue=-1;
-		
-		if (welcome)
-		{
-			print ("Welcome to wyznaczCeneActual");
-			print ("leftBound "+leftBound+" "+leftValue);
-			print ("rightBound "+rightBound+" "+rightValue);
-			getInput();
-		}
-		
-		int a=0;
-		while (a<Stale.limitBisekcji)
-		{
-
-			
-			srodek = (leftBound+rightBound)/2;
-			srodekValue = funkcjaRynku(srodek,funkcjaRynku);
-			
-			if (bisectionStep)
-			{
-				print("Biserkcja: "+a);
-				print ("leftBound "+leftBound+" "+leftValue);
-				print ("rightBound "+rightBound+" "+rightValue);
-				print("srodek "+srodek+" "+srodekValue);
-				getInput("");
-				
-			}
-			
-			if (srodekValue>0)
-			{
-				leftBound = srodek;
-				leftValue = srodekValue;
-			}
-			else
-			{
-				rightBound = srodek;
-				rightValue = srodekValue;
-			}
-			
-			
-			a++;
-		}
-		
-		if (bisectionEnd)
-		{
-			print("Bisection end");
-			print (srodek+" "+srodekValue);
-			print ("leftBound "+leftBound+" "+leftValue);
-			print ("rightBound "+rightBound+" "+rightValue);
-			getInput();
-		}
-		
-		float valueToBeReturned = wyznaczCeneRownomiernyPodzial(leftBound,rightBound,rownomienryPodzial);
-		
-		if (bisectionEnd)
-		{
-			print("Bisection end #2");
-			print ("return " +valueToBeReturned);
-
-			getInput();
-		}
-		
-		return valueToBeReturned;
-	}*/
 	
 	//isminimum= true zwraca mnimum inaczej zwracanae jest maximum
 	float wyznaczCeneRownomiernyPodzial(float leftBound, float rightBound, Boolean debug, Boolean isMinimum)
@@ -1035,21 +975,156 @@ public class Rynek extends CoreClass {
 		rynekHistory.setReportHandelWolumenHandlu(wolumenHandlu);
 		rynekHistory.dodajWolumenHandlu(wolumenHandlu);
 		
+		if (Stale.isScenariuszEV)
+		{
+			rozpiszKontraktyPart2EV( index, wolumenHandlu, sumaKupna, sumaSprzedazy );
+		}
+		else
+		{
+			rozpiszKontraktyPart2NoEV( index, wolumenHandlu, sumaKupna, sumaSprzedazy );
+		}
 		
+
+				
+	}
+	
+	//index - idnex dla ktorego punkt ma cene = cena rykowa
+	void rozpiszKontraktyPart2EV(int index,float wolumenHandlu, float sumaKupna,float sumaSprzedazy )
+	{
+		//wektor z ostatecznie ustalona cena
+		//rozpiszKontrakty() - wrzuca jako ostatnia cene cene obowiazujaa na lokalnym rynku 
+		ArrayList<Float> priceVector = priceVectorsList.get(priceVectorsList.size()-1);
+
+		
+		//ograniczenia handlu prosumenta
+		ArrayList<DayData> constrainMarkerList = new ArrayList<DayData>();
+		
+		//ograniczenia handlu EV
+		ArrayList<DayData> constrainMarkerListEV = new ArrayList<DayData>();
+		
+		//print(listaFunkcjiUzytecznosci.size());
+		//getInput("rozpiszKontraktyPart2EV first stop");
+		
+		int i=0;
+		while(i<listaFunkcjiUzytecznosci.size())
+		{
+			
+			//lista funkcji uzytecznosci o indeksie i
+			ArrayList<Point> L1	=listaFunkcjiUzytecznosci.get(i);
+			
+			//point z cena = cena rynkowa
+			Point point = L1.get(index);
+			
+			
+			DayData d =rozpiszKontraktyPointToConstrainMarker(point, wolumenHandlu, sumaKupna, sumaSprzedazy, i);
+			
+			if (i<Stale.liczbaProsumentow)
+			{
+				constrainMarkerList.add(d);
+			}
+			else
+			{
+				constrainMarkerListEV.add(d);
+				
+				/*print(d.getKupuj());
+				print(d.getConsumption());
+				print(d.getGeneration());
+				
+				getInput("rozpiszKontraktyPart2EV - Ostatni kontrakt");*/
+			}
+
+			
+			//print("rozpiszKontraktyPart2EV "+i);
+			i++;
+		}
+		
+		ArrayList<Prosument> listaProsumentow =listaProsumentowWrap.getListaProsumentow();
+
+		//wyywolaj pobranie ontraktu
+		i=0;
+		while (i<Stale.liczbaProsumentow)
+		{
+			if (i<constrainMarkerListEV.size())
+			{
+				((ProsumentEV)listaProsumentow.get(i)).getKontrakt(priceVector,constrainMarkerList.get(i),constrainMarkerListEV.get(i));
+				//print("constrainMarkerListEV "+i);
+			}
+			else
+			{
+				listaProsumentow.get(i).getKontrakt(priceVector,constrainMarkerList.get(i));
+			}
+			i++;
+		}
+		
+		//getInput("rozpiszKontraktyPart2EV -end");
+	}
+	
+	//
+	DayData rozpiszKontraktyPointToConstrainMarker(Point point,float wolumenHandlu, float sumaKupna,float sumaSprzedazy, int indeksKonta)
+	{
+		//print("rozpiszKontraktyPointToConstrainMarker idnex "+indeksKonta);
+		
+		DayData constrainMarker  = new DayData();
+
+		float energia = point.getIloscEnergiiDoKupienia();
+		
+		
+		if (energia>0)
+		{
+			
+			float iloscEnergiiDoKupienia = energia/sumaKupna*wolumenHandlu;
+			
+			constrainMarker.setKupuj(1f);
+			constrainMarker.setGeneration(iloscEnergiiDoKupienia);
+			
+			rynekHistory.ustawBetaDlaWynikowHandlu(iloscEnergiiDoKupienia,indeksKonta);				
+		}
+		else
+		{
+			float iloscEnergiiDoSprzedania = energia/sumaSprzedazy*wolumenHandlu;
+			if (wolumenHandlu==0)
+			{
+				iloscEnergiiDoSprzedania=0;
+			}
+
+			
+			constrainMarker.setKupuj(0f);
+			constrainMarker.setConsumption(-iloscEnergiiDoSprzedania);
+			
+			/*if (indeksKonta>15)
+			{	
+				print("iloscEnergiiDoSprzedania "+iloscEnergiiDoSprzedania );
+				print("sumaSprzedazy "+sumaSprzedazy);
+				print("wolumenHandlu "+wolumenHandlu);
+				getInput("rozpiszKontraktyPointToConstrainMarker energia<=0");
+			}*/
+			
+			
+			rynekHistory.ustawBetaDlaWynikowHandlu(iloscEnergiiDoSprzedania,indeksKonta);				
+		}
+		
+		
+		return 	constrainMarker;
+
+	}
+
+	
+	void rozpiszKontraktyPart2NoEV(int index,float wolumenHandlu, float sumaKupna,float sumaSprzedazy )
+	{
 		//wyznacz wolumen handlu dla kazdego z prosumentow
 		ArrayList<Prosument> listaProsumentowTrue =listaProsumentowWrap.getListaProsumentow();
 		
 
-		a=0;
+		int a=0;
 		while (a<listaProsumentowTrue.size())
 		{
 						
 			// ustala bianrke kupuj
-			// ustala clakowita sprzedaz (jako generacje)
-			//ustala calkowite kupno (jako consumption)
+			// ustala clakowita sprzedaz (jako consumption)
+			//ustala calkowite kupno (jako generacje)
 			DayData constrainMarker  = new DayData();
 			
-			L1	=listaFunkcjiUzytecznosci.get(a);
+			ArrayList<Point> L1	=listaFunkcjiUzytecznosci.get(a);
 			
 			//energia jaka zadeklarowal prosument ze sprzeda/kupi
 			float energia = L1.get(index).getIloscEnergiiDoKupienia();
@@ -1074,14 +1149,13 @@ public class Rynek extends CoreClass {
 				rynekHistory.ustawBetaDlaWynikowHandlu(iloscEnergiiDoSprzedania,a);				
 			}
 			
-			priceVector = priceVectorsList.get(priceVectorsList.size()-1);
+			ArrayList<Float> priceVector = priceVectorsList.get(priceVectorsList.size()-1);
 			
 			//poinformuj prosumenta o wyniakch handlu i dostosuj go do wynikow
 			listaProsumentowTrue.get(a).getKontrakt(priceVector,constrainMarker);
 			
 			a++;
 		}
-				
 	}
 	
 	//zwraca liste wszsytkich cen jakie byly deklarowane na najblizsyz slot

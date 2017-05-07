@@ -13,6 +13,10 @@ public class ProsumentEV extends Prosument {
 	
 	//zawiera listy kolejnych smaochodow
 	ArrayList<ArrayList<EVData>> listaPodrozyFlota = new ArrayList<>(); 
+	
+	
+	//lista zawiera sume EVData
+	private ArrayList<EVData> eVDataListSuma = new ArrayList<>();
 
 	OptimizerEV optimizerEV = OptimizerEV.getInstance();
 	OptimizerEV2 optimizerEV2 = OptimizerEV2.getInstance();
@@ -27,7 +31,10 @@ public class ProsumentEV extends Prosument {
 
 	
 	//GETTTERS
-	
+	ArrayList<EVData> getEVDataListSuma()
+	{
+		return this.eVDataListSuma;
+	}
 	
 	ArrayList<EVData> getEVDataList()
 	{
@@ -146,8 +153,46 @@ public class ProsumentEV extends Prosument {
 		super.loadData();
 		
 		ArrayList<String> godzinyPodrozy = loader.loadCars(ID);
-		createListaPodrozy(godzinyPodrozy);
-		//getInput("loadData "+ID);
+		
+		//inicjalizuje listy EVData pustymi obiektami
+		createListaPodrozy(godzinyPodrozy);		
+	}
+	
+	
+	//tworzy i uzupelnia liste eVDataListSuma EVData 
+	public void initializeEVDataListSuma()
+	{
+		
+		
+		//getInput("initializeEVDataListSuma - start");
+		while (eVDataListSuma.size()!=dayDataList.size())
+		{
+			EVData ev = new EVData();
+			
+			int i=0;
+			while (i<listaPodrozyFlota.size())
+			{
+				EVData ev2 = listaPodrozyFlota.get(i).get(eVDataListSuma.size());
+				
+				ev.setEB_EVdom(ev.getEB_EVdom()+ev2.getEB_EVdom());
+				ev.setEVdom(ev.getEVdom()+ev2.getEVdom());
+				ev.setEVdom_c(ev.getEVdom_c()+ev2.getEVdom_c());
+				ev.setEVdom_EB(ev.getEVdom_EB()+ev2.getEVdom_EB());
+				ev.setG_EVdom(ev.getG_EVdom()+ev2.getG_EVdom());
+				
+				ev.setZew_EVdom(ev.getZew_EVdom() +ev2.getZew_EVdom());
+				
+				
+				i++;
+			}
+			
+			
+			
+			eVDataListSuma.add(ev);
+		}
+		
+		//getInput("initializeEVDataListSuma - end");
+		
 	}
 	
 	
@@ -208,6 +253,9 @@ public class ProsumentEV extends Prosument {
 		
 		
 		form24.setStanPoczatkowyBaterii(currentDayData().getStanBateriiNaPoczatkuSlotu());
+		
+		
+		
 		int i=0;
 		while (i<listaPodrozyFlota.size())
 		{

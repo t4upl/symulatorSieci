@@ -7,10 +7,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 
 public class Reporter extends CoreClass {
-String simulationEndDate =Stale.simulationEndDate;
+	
+	String simulationEndDate =Stale.simulationEndDate;
 	
 	//ustawiane przez LokalenCentrum
 	private String scenarioFolder;
@@ -95,7 +97,7 @@ String simulationEndDate =Stale.simulationEndDate;
 		}
 	}
 	
-	//do so that entire path path is created 
+	//do so that entire path path is created
 	void createFolderCascade(String path)
 	{	
 		String[] s2 = path.split("\\\\");
@@ -321,6 +323,7 @@ String simulationEndDate =Stale.simulationEndDate;
 		return s;
 	}
 	
+	//TODO
 	void createSterowanieReportBody(ArrayList<DayData> sterowanieForPriceVector, Prosument prosument,String additionalText, ArrayList<Float> priceVector, int iteration)
 	{
 		String hourForFileName = LokalneCentrum.getCurrentHour();
@@ -418,6 +421,60 @@ String simulationEndDate =Stale.simulationEndDate;
 			a++;
 		}
 		
+	}
+	
+	//indeks w lsicie nie prosumenta
+	public void createPointHistoryReportVer2(ArrayList<ArrayList<ArrayList<Point>>> historyListaFunkcjiUzytecznosci, int indeks)
+	{
+		String day = LokalneCentrum.getCurrentDay();
+		String hour = getHourForPath();
+		
+		String pathToFile = scenarioFolder+"\\handel\\point\\"+day+"\\"+hour;
+		
+		createFolderCascade(pathToFile);
+		
+		pathToFile+="\\"+(indeks+1)+".csv";
+		
+		try
+		{
+			Writer writer = new FileWriter(pathToFile);
+			
+			ArrayList<ArrayList<Point>> zbiorFunkcjiUzytecznosci = historyListaFunkcjiUzytecznosci.get(indeks);
+			//print (zbiorFunkcjiUzytecznosci.size());
+			int b=0;
+			while (b<zbiorFunkcjiUzytecznosci.size())
+			{
+				if (b>0)
+				{
+					writerWriteLine(writer,"");
+				}
+				
+				writerWriteLine(writer,""+b);
+				createPointHistoryWritePointVector(writer,zbiorFunkcjiUzytecznosci.get(b));
+	
+				b++;
+			}
+			
+			writer.close();
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+			getInput("Error in createPointHistoryReportVer2");
+		}
+	
+	}
+	
+	//wez godzine z lokalnego centurm i przetworz do postaci sciezki
+	String getHourForPath()
+	{
+		String hour = LokalneCentrum.getCurrentHour();
+		
+		if (hour.contains(":"))
+		{
+			hour=hour.replace(":", "_");
+		}
+		
+		return hour;
 	}
 	
 	void createPointHistoryReport(ArrayList<ArrayList<ArrayList<Point>>> historyListaFunkcjiUzytecznosci)
@@ -543,7 +600,11 @@ String simulationEndDate =Stale.simulationEndDate;
 		{	
 			String day = LokalneCentrum.getCurrentDay();
 			String hour = LokalneCentrum.getCurrentHour();
-			String hourForFileName = sterowanieLastHour.replace(":", "_");
+			
+			//print("createHandelReport "+hour);
+			//getInput("createHandelReport stop");
+			
+			String hourForFileName = hour.replace(":", "_");
 
 			
 			createHandleFolders(day, hour);
@@ -577,8 +638,12 @@ String simulationEndDate =Stale.simulationEndDate;
 	//alfa - suma sprzedazy, beta -suma kupna, energia - suma 
 	void createHandelReportBody(Point point, ArrayList<Point> transactionList, String day, String hour)
 	{
-		//TODO fill this out
+		
 		String pathToFile =scenarioFolder+"\\handel\\handel_results\\"+day+"\\"+hour+"\\handel_results.csv";
+		
+		String folder =getfolderName(pathToFile);
+		createFolderCascade(folder);
+		
 		try {
 			Writer writer = new FileWriter(pathToFile);
 			writerWriteLine(writer, "day,"+day);
@@ -741,6 +806,522 @@ String simulationEndDate =Stale.simulationEndDate;
 			e.printStackTrace();
 		}
 		
-	}		
+	}
+	
+	
+	public void createSterowanieReport(ProsumentEV prosumentEV, OptimizerEV.Sterowanie sterowanie,String additionalText, int iteration)
+	{
+		
+		String day = LokalneCentrum.getCurrentDay();
+		String hourForFileName = LokalneCentrum.getCurrentHour();
+		hourForFileName = hourForFileName.replace(":", "_");
+		String pathToHourFolder =getProsumentFolderPath(prosumentEV.getID())+"\\predykcje\\"+day+"\\"+hourForFileName+"\\"+iteration+"_"+additionalText+".csv";
+		
+		//print (pathToHourFolder);
+		
+		GridReport gridReport = new GridReport();
+		gridReport.setPathToFile(pathToHourFolder);
+		
+		createSterowanieHeader(gridReport,additionalText, iteration,prosumentEV);
+		
+		
+		
+		createSterowanieDataHeader(gridReport);
+		
+		createSterowanieFillOutReport(sterowanie, gridReport);
+		
+		
+		gridReport.dropToFile();
+		
+		
+		//getInput("createSterowanieReport -end");
+	}
+	
+	//TODO
+	void createSterowanieFillOutReport(OptimizerEV.Sterowanie sterowanie, GridReport gridReport)
+	{
+		ArrayList<DayData> dList= sterowanie.getDList();
+		ArrayList<EVData> eVList= sterowanie.getEvList();
+		
+		//czesc 
+		createSterowanieFillOutReportDayDataLoop(gridReport,dList );
+		createSterowanieFillOutReportEVDataLoop(gridReport, eVList );
+
+	}
+	
+	void createSterowanieFillOutReportEVDataLoop(GridReport gridReport, ArrayList<EVData> eVList )
+	{		
+		int i=0;
+		while (i<eVList.size())
+		{
+			EVData ev = eVList.get(i);
+			
+			gridReport.addDataToTable("EV",ev.getEV());
+			gridReport.addDataToTable("EB_EV",ev.getEB_EV());
+			gridReport.addDataToTable("EV_EB",ev.getEV_EB());
+			gridReport.addDataToTable("Zew_EV",ev.getZew_EV());
+			gridReport.addDataToTable("G_EV",ev.getG_EV());
+			gridReport.addDataToTable("EV_c",ev.getEV_c());
+			
+			gridReport.addDataToTable("EV_EM",ev.getEV_EM());			
+			gridReport.addDataToTable("EM_EV",ev.getEM_EV());
+			
+			gridReport.addDataToTable("EVbinKupuj",ev.getEVbinKupuj());
+			gridReport.addDataToTable("Status",ev.getStatus());
+			
+			gridReport.addDataToTable("koszt(opt)",ev.getKoszt());
+			gridReport.addDataToTable("koszt_Zew",ev.getKoszt_Zew());
+			gridReport.addDataToTable("koszt_sklad",ev.getKoszt_sklad());
+			gridReport.addDataToTable("koszt_EV",ev.getKoszt_EV());
+			gridReport.addDataToTable("koszt_handel",ev.getKoszt_handel());
+			
+			i++;
+		}
+		
+	}
+	
+	void createSterowanieFillOutReportDayDataLoop(GridReport gridReport, ArrayList<DayData> dList )
+	{
+		int currentTime = LokalneCentrum.getTimeIndex();
+		
+		int i=0;
+		while (i<dList.size())
+		{
+			DayData d = dList.get(i);
+			
+			gridReport.addDataToTable("Day",d.getDay());
+			gridReport.addDataToTable("Hour",d.getHour());
+			
+			gridReport.addDataToTable("Konsumpcja",d.getConsumption());
+			gridReport.addDataToTable("Generacja(True)",d.getTrueGeneration());
+			
+			
+			gridReport.addDataToTable("stanBateriiNaPoczatkuSlotu",d.getStanBateriiNaPoczatkuSlotu());
+			gridReport.addDataToTable("stanBateriiNaKoniecSlotu",d.getStanBateriiNaKoniecSlotu());
+
+			gridReport.addDataToTable("zBateriiNaKonsumpcje",d.getZBateriiNaKonsumpcje());
+			gridReport.addDataToTable("zBateriiNaRynek",d.getZBateriiNaRynek());
+			
+			gridReport.addDataToTable("zGeneracjiNaKonsumpcje",d.getZGeneracjiNaKonsumpcje());
+			gridReport.addDataToTable("zGeneracjiNaRynek",d.getZGeneracjiNaRynek());			
+			gridReport.addDataToTable("zGeneracjiDoBaterii",d.getZGeneracjiDoBaterii());
+			
+			gridReport.addDataToTable("zRynekNaKonsumpcje",d.getZRynekNaKonsumpcje());
+			gridReport.addDataToTable("zRynekDoBaterii",d.getZRynekDoBaterii());
+			
+			gridReport.addDataToTable("cenaLokalna",d.getCenaNaLokalnymRynku());
+			gridReport.addDataToTable("koszt",d.getCost());
+			gridReport.addDataToTable("kupuj",d.getKupuj());
+			
+
+
+			i++;
+		}
+	}
+	
+	
+	
+	void createSterowanieHeader(GridReport gridReport,String additionalText, int iteration,ProsumentEV prosumentEV)
+	{
+		gridReport.addToHeader("Day", LokalneCentrum.getCurrentDay());
+		gridReport.addToHeader("hour", LokalneCentrum.getCurrentHour());
+		
+		gridReport.addToHeader("iteration", iteration);
+		gridReport.addToHeader("note", additionalText);
+		gridReport.addToHeader("ID", prosumentEV.getID());
+		gridReport.addToHeader("Scenariusz", Stale.scenariusz);
+
+
+	}
+	
+	void createSterowanieDataHeader(GridReport gridReport)
+	{
+		gridReport.addDataHeader("Day");
+		gridReport.addDataHeader("Hour");
+		gridReport.addDataHeader("Konsumpcja");
+		gridReport.addDataHeader("Generacja");
+		gridReport.addDataHeader("Generacja(True)",1);
+		
+		gridReport.addDataHeader("stanBateriiNaPoczatkuSlotu");
+		gridReport.addDataHeader("stanBateriiNaKoniecSlotu",1);
+		
+		gridReport.addDataHeader("zBateriiNaKonsumpcje");
+		gridReport.addDataHeader("zBateriiNaRynek",1);
+		
+		gridReport.addDataHeader("zGeneracjiNaKonsumpcje");
+		gridReport.addDataHeader("zGeneracjiNaRynek");
+		gridReport.addDataHeader("zGeneracjiDoBaterii",1);
+		
+		gridReport.addDataHeader("zRynekNaKonsumpcje");
+		gridReport.addDataHeader("zRynekDoBaterii",1);
+		
+		gridReport.addDataHeader("cenaLokalna");
+		gridReport.addDataHeader("koszt");
+		gridReport.addDataHeader("kupuj",1);
+		
+		gridReport.addDataHeader("EV");
+		gridReport.addDataHeader("EB_EV");
+		gridReport.addDataHeader("EV_EB");
+		gridReport.addDataHeader("Zew_EV");
+		
+		gridReport.addDataHeader("G_EV");
+		gridReport.addDataHeader("EV_c");
+		gridReport.addDataHeader("EV_EM");
+		gridReport.addDataHeader("EM_EV");
+		gridReport.addDataHeader("EVbinKupuj");
+		gridReport.addDataHeader("Status",1);
+		
+
+		gridReport.addDataHeader("koszt(opt)");
+		gridReport.addDataHeader("koszt_Zew");
+		gridReport.addDataHeader("koszt_sklad");
+		gridReport.addDataHeader("koszt_EV");
+		gridReport.addDataHeader("koszt_handel");
+		
+	}
+	
+	//wyskrobuje ze sciezki nazwe pliku
+	String getfolderName(String pathToFile)
+	{
+		//print("getfolderName "+pathToFile);
+		
+		String[] s2 =pathToFile.split("\\\\");
+		String output="";
+		
+		int i=0;
+		while (i<s2.length-1)
+		{
+			if (i>0)
+			{
+				output+="\\";
+			}
+			output+=s2[i];
+			//print("getfolderName " +s2[i]);
+			i++;
+		}
+		
+		//output = output.substring(0,output.length()-1);
+		
+		return output;
+	}
+	
+	//TODO
+	public void createProsumentReport(ProsumentEV prosumentEV)
+	{
+		
+		String pathToFile =scenarioFolder+"\\"+"agregate"+"\\"+prosumentEV.getID()+".csv";
+		if (prosumentEV.getID()<=liczbaProsumentow)
+		{
+			pathToFile =scenarioFolder+"\\"+prosumentEV.getID()+"\\prosument_"+prosumentEV.getID()+".csv";	
+		}
+		
+		GridReport gridReport = new GridReport();
+		gridReport.setPathToFile(pathToFile);
+		
+		createProsumentReportHeader(gridReport, prosumentEV);
+		
+		//Data Header tkai sam jak w raportach sterowania
+		createSterowanieDataHeader(gridReport);
+		createProsumentFillOutReport(prosumentEV, gridReport);
+		
+		gridReport.dropToFile();
+			
+		
+	}
+	
+	void createProsumentFillOutReport(ProsumentEV prosumentEV, GridReport gridReport)
+	{
+		//+1 bo chcemy wziac eleementy z data == Stale.endDate, +1 za to ze liczba eleemetnow,a nei indeks ostatniego eleementu
+		int liczbaElemetnow =LokalneCentrum.getTimeIndex()+2;
+		
+		ArrayList<DayData> dList=  getNFirstFromList(prosumentEV.getDayDataList(),liczbaElemetnow);
+		ArrayList<EVData> eVList=  getNFirstFromList(prosumentEV.getEVDataList(),liczbaElemetnow);
+		
+		//createSterowanieFillOutReportDayDataLoop dodaje wssystkie elementy z lsity wic trzeba najpeirw list eprzyciac 
+		createSterowanieFillOutReportDayDataLoop(gridReport,dList );
+		createSterowanieFillOutReportEVDataLoop(gridReport, eVList );
+	}
+	
+
+	
+	void createProsumentReportHeader(GridReport gridReport,ProsumentEV prosumentEV)
+	{
+		gridReport.addToHeader("Scenariusz",Stale.scenariusz );
+		gridReport.addToHeader("ceny z generatora",Stale.cenyZGeneratora );
+		gridReport.addToHeader("ID", prosumentEV.getID());
+		gridReport.addToHeader("Koszt calkowity", prosumentEV.getTotalCost());
+		gridReport.addToHeader("Cost no reserve", prosumentEV.getCostNoReserve());
+		gridReport.addToHeader("Reserve", prosumentEV.getReserveBonus());
+		gridReport.addToHeader("Report note", prosumentEV.getReportNote());
+		
+		
+
+	}
+	
+	//-----------------------------------
+	//klasa reprezentuje rpaort w postaci: header (klucz wartosc), searator, header tabeli dnaych, tabela dnaych	
+	class GridReport
+	{
+		int headerLiczbaLinii =20;
+		int dataLines=0;
+		String pathToFile;
+		
+		String separator="###";
+		
+		//postaci key-value
+		ArrayList<String> headerList= new ArrayList<>();
+		
+		//nazwy kolumn w tabeli
+		ArrayList<String> dataHeaderList= new ArrayList<>();
+		
+		//wartosci w tabeli ulozone kolumnami
+		ArrayList<ArrayList<String>> dataList= new ArrayList<>();
+
+		//okresla ile spacji wstawic po kazdej kolumnie
+		ArrayList<Integer> dataHeaderSpacesList= new ArrayList<>();
+		
+		String getColumns()
+		{
+			String s="";
+			
+			int i=0;
+			while (i<dataHeaderList.size())
+			{
+				s+=dataHeaderList.get(i)+", ";
+				i++;
+			}
+			
+			return s;
+		}
+		
+		
+		
+		public void addDataToTable(String columnName, Integer value)
+		{
+			addDataToTable(columnName, value+"");
+		}
+		
+		public void addDataToTable(String columnName, Float float1)
+		{
+			String s = String.format("%.8f", float1);
+			addDataToTable(columnName, s);
+		}
+		
+		public void addDataToTable(String columnName, double double1)
+		{
+			String s = String.format("%.8f", double1);
+			addDataToTable(columnName, s);
+		}
+		
+		public void addDataToTable(String columnName, String value)
+		{
+			int index = dataHeaderList.indexOf(columnName);
+			
+			if (index==-1)
+			{
+				print(columnName +" is does not exist in table");
+				print("available columns "+getColumns());
+				getInput("ERROR in addDataToTable- no such column");
+			}
+			else
+			{
+				dataList.get(index).add(value);
+			}
+			
+		}
+		
+		public void addDataHeader(String value)
+		{
+			addDataHeader(value,0);
+		}
+		
+		public void addDataHeader(String value,Integer spacesFollowing)
+		{
+			//index sprawdza czy kolumna znajduje sie w liscie kolumn
+			int index = dataHeaderList.indexOf(value);
+			
+			if (index==-1)
+			{
+				dataHeaderList.add(value);
+				dataHeaderSpacesList.add(spacesFollowing);
+				dataList.add(new ArrayList<String>());
+			}
+			else
+			{
+				getInput("ERROR in addDataHeader - koluman "+value+" already exists");
+			}
+		}
+		
+		public void addToHeader(String key, Float value)
+		{
+			headerList.add(key+","+value);
+		}
+		
+		public void addToHeader(String key, Boolean value)
+		{
+			headerList.add(key+","+value);
+		}
+		
+		public void addToHeader(String key, String value)
+		{
+			headerList.add(key+","+value);
+		}
+		
+		public void addToHeader(String key, int value)
+		{
+			headerList.add(key+","+value);
+		}
+		
+		public void setPathToFile(String pathToFile)
+		{
+			this.pathToFile =pathToFile;
+		}
+		
+		
+		String getfolderName()
+		{
+			String[] s2 =pathToFile.split("\\\\");
+			String output="";
+			
+			int i=0;
+			while (i<s2.length-1)
+			{
+				if (i>0)
+				{
+					output+="\\";
+				}
+				output+=s2[i];
+				//print("getfolderName " +s2[i]);
+				i++;
+			}
+			
+			return output;
+		}
+		
+		public void dropToFile()
+		{
+			String folder =getfolderName();
+			createFolderCascade(folder);
+			
+			Writer writer;
+			try {
+				writer = new FileWriter(pathToFile);
+				dropHeader(writer);
+				dropDataHeader(writer);
+				dropData(writer);
+				
+				writer.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+				getInput("ERROR in dropToFile");
+			}
+
+			
+			//print ("dropToFile -end");
+			
+			
+		}
+		
+		void dropData(Writer writer)
+		{
+			//oblicz ile jest linii w tabeli
+			countDataLines();
+			int i=0;
+			while (i<dataLines)
+			{
+				dropLine(writer, i);
+				i++;
+			}
+		}
+		
+		void dropLine(Writer writer, int numerLinii)
+		{
+			String line="";
+			int i=0;
+			while (i<dataList.size())
+			{
+				ArrayList<String> kolumna =dataList.get(i);
+				
+				String toBeAdded="null";
+				if (numerLinii < kolumna.size())
+				{
+					toBeAdded=kolumna.get(numerLinii);
+				}
+				
+				line+=toBeAdded+","+csvSpace(dataHeaderSpacesList.get(i));
+				i++;
+			}
+			
+			
+			writerWriteLine(writer,line);
+		}
+		
+		void countDataLines()
+		{
+			int i=0;
+			while (i<headerList.size())
+			{
+				int numberOflines=dataList.get(i).size();
+				
+				if (numberOflines>dataLines)
+				{
+					dataLines=numberOflines;
+				}
+				i++;
+			}
+		}
+		
+		void dropHeader(Writer writer)
+		{
+			int i=0;
+			while (i<headerLiczbaLinii)
+			{
+				if (i<headerList.size())
+				{
+					writerWriteLine(writer,headerList.get(i));
+				}
+				else
+				{
+					writerWriteLine(writer,"");
+				}
+				i++;
+			}
+			
+			writerWriteLine(writer,separator);
+		}
+		
+		String csvSpace(int number)
+		{
+			String s="";
+			int i=0;
+			while (i<number)
+			{
+				s+=",";
+				i++;
+			}
+			return s;
+			
+		}
+		
+		void dropDataHeader(Writer writer)
+		{
+			//ArrayList<String> dataHeaderList= new ArrayList<>();		
+			//ArrayList<ArrayList<String>> dataList= new ArrayList<>();
+
+			//okresla ile spacji wstawic po kazdej kolumnie
+			//ArrayList<Integer> dataHeaderSpacesList= new ArrayList<>();
+			
+			String s="";
+			int i=0;
+			while (i<dataHeaderList.size())
+			{
+				s+=dataHeaderList.get(i)+","+csvSpace(dataHeaderSpacesList.get(i));
+				i++;
+			}
+			
+			writerWriteLine(writer,s);
+
+		}
+	}
 	
 }
