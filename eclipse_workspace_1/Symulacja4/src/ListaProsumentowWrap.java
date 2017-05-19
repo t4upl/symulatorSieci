@@ -6,7 +6,11 @@ public class ListaProsumentowWrap extends CoreClass {
 	//byla rowna zuzyciu wszystkich prosumentow
 	double mnoznikGeneracji;
 	
+	//zawiera tylko Prosument i ProsumentEV
 	private ArrayList<Prosument> listaProsumentow = new ArrayList<>();
+	
+	//uzywane tylko w scenariuszach z Virutalnym prosumentem 
+	ProsumentVirtual prosumentVirtual;
 
 	Reporter reporter = Reporter.getInstance();
 
@@ -56,6 +60,7 @@ public class ListaProsumentowWrap extends CoreClass {
 			listaProsumentow.add(prosument);
 			i++;
 		}
+		
 	}
 	
 	public void modyfikatorScenariusza()
@@ -85,19 +90,36 @@ public class ListaProsumentowWrap extends CoreClass {
 			case 6: scenario6(); break;
 			
 			//scenariusz EV
-			case 7: scenario17(); break;
-			case 8: scenario18(); break;
-			case 9: scenario19(); break;
-			case 10: scenario20(); break;
-			case 11: scenario21(); break;
-			case 12: scenario22(); break;
-			case 13: scenario23(); break;
+			case 17: scenario17(); break;
+			case 18: scenario18(); break;
+			case 19: scenario19(); break;
+			case 20: scenario20(); break;
+			case 21: scenario21(); break;
+			case 22: scenario22(); break;
+			case 23: scenario23(); break;
 			
 			default: System.out.println("!!!NO SUCH SCENARIO"); getInput();
 		}
 		
-		
+		if (Stale.isVirtualnyProsument)
+		{
+			stworzVirualnegoProsumenta();
+		}
 	}
+	
+	//po stworzeniu 
+	void stworzVirualnegoProsumenta()
+	{		
+		prosumentVirtual = new ProsumentVirtual(listaProsumentow);
+		prosumentVirtual.setID(100);
+	}
+	
+	public void zaktualizujHandelVirtualnegoProsumenta()
+	{
+		prosumentVirtual.zaktualizujHandel();
+	}
+	
+	
 	
 	//znajduje mnoznik taki ze suma generacji grupy prosumentow == suma konsumpcji grupy 
 	public float getMnoznik()
@@ -129,19 +151,16 @@ public class ListaProsumentowWrap extends CoreClass {
 		
 		float mnoznik = sumaZuzycia/sumaGeneracji;
 		
-		print("mnoznik "+mnoznik);
 		
 		return mnoznik;
 	}
 	
 	//oblicza ilosc energii jaka wydaja wszsycy prosumenci wchdozacy w sklad symualcji na rzecz podrozy EV
-	float obliczZuzycieEnergiinaEV()
-	{
-		print ("obliczZuzycieEnergiinaEV");
+	double obliczZuzycieEnergiinaEV()
+	{		
+		double sum=0;
 		
-		float sum=0;
-		
-		int liczbaDni=(LokalneCentrum.getSimulationEndDateIndex()-1)/24;
+		int liczbaDni=(LokalneCentrum.getSimulationEndDateIndex())/24;
 		int liczbaProsumenowEV=0;
 		
 		int i=0;
@@ -153,12 +172,9 @@ public class ListaProsumentowWrap extends CoreClass {
 			}
 			i++;
 		}
-		
-		print("liczba Dni "+liczbaDni);
-		
+				
 		//2 - dwie podroze dizennie
 		sum =liczbaDni*2*liczbaProsumenowEV*Stale.podrozMinimumEnergii;
-		print("sum "+sum);
 		
 		return sum;
 	}
@@ -349,6 +365,24 @@ public class ListaProsumentowWrap extends CoreClass {
 	
 	public void endSimulationReport()
 	{
+		if (Stale.isVirtualnyProsument)
+		{
+			endSimulationReportVirtualProsument();
+		}
+		else
+		{
+			endSimulationReportProsumenci();
+		}
+	}
+	
+	void endSimulationReportVirtualProsument()
+	{
+		prosumentVirtual.endSimulation();
+	}
+	
+	//called from endSimulationReport
+	void endSimulationReportProsumenci()
+	{
 	
 		int i=0;
 		while(i<listaProsumentow.size())
@@ -376,6 +410,65 @@ public class ListaProsumentowWrap extends CoreClass {
 		while (a<listaProsumentow.size())
 		{
 			listaProsumentow.get(a).zaktualizujHandelBrakHandlu();
+			a++;
+		}
+	}
+	
+	//used by getListaSumarycznejGeneracji and getListaSumarycznejKonsumpcji
+	ArrayList<Double> getListaSumarycznej(int startTimeIndex, Boolean generationFlag)
+	{
+		ArrayList<Double> L1 = new ArrayList<>();
+		
+		double wartoscDoDodania=0f;
+		
+		int a=0;
+		while (a<listaProsumentow.size())
+		{
+			ArrayList<DayData> dList = listaProsumentow.get(a).getDayDataList();
+			int b=0;
+			while (b<Stale.horyzontCzasowy)
+			{
+				if (generationFlag)
+				{
+					wartoscDoDodania =dList.get(startTimeIndex+b).getTrueGeneration();
+				}
+				else
+				{
+					wartoscDoDodania =dList.get(startTimeIndex+b).getConsumption();
+				}
+				
+				if (a==0)
+				{
+					L1.add(wartoscDoDodania);
+				}
+				else
+				{
+					L1.set(b, L1.get(b)+wartoscDoDodania);
+				}
+				b++;
+			}
+			a++;
+		}		
+		
+		return L1;
+	}
+	
+	public ArrayList<Double> getListaSumarycznejGeneracji(int startTimeIndex)
+	{
+		return getListaSumarycznej(startTimeIndex,true);
+	}
+	
+	public ArrayList<Double> getListaSumarycznejKonsumpcji(int startTimeIndex)
+	{
+		return getListaSumarycznej(startTimeIndex,false);
+	}
+	
+	public void broadcastFirstPriceVector(ArrayList<ArrayList<Double>> listOfPriceVectors)
+	{	
+		int a=0;
+		while (a<listaProsumentow.size())
+		{
+			listaProsumentow.get(a).takeFirstPriceVector(listOfPriceVectors);
 			a++;
 		}
 	}

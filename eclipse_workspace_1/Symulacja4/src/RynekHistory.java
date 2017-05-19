@@ -1,10 +1,37 @@
+import java.util.ArrayList;
 
-public class RynekHistory {
+public class RynekHistory extends CoreClass {
 
+	//uzywane do reportowanie historii cen
+	public ArrayList<Double> historiaCenPierwszeCeny = new ArrayList<>();
+	public ArrayList<Double> historiaCenFinalneCeny = new ArrayList<>();
+	public ArrayList<Double> historiaCenWolumenHandlu = new ArrayList<>();
+
+	//currently out of use
+	//historia funckji uzytecznosci -> w czasie -> dla i-tego prosumenta -> 
+	private ArrayList<ArrayList<ArrayList<Point>>> historyListaFunkcjiUzytecznosci = new ArrayList<>();
+
+	//
+	double wolumenHandlu;
+	double sumaSprzedazy;
+	double sumaKupna;
+	
+	//cena kontraktowa w iteracji
+	double cenaFinalna;
+	ArrayList<ArrayList<Point>> ListaFunkcjiUzytecznosciNaKoniecHandlu = new ArrayList<>();
+	
+	//wszystkie ceny jakie byly deklarowane w trkacie danej iteracji
+	ArrayList<Double> historiaCen = new ArrayList<>();
+	
+	
+	
+	Reporter reporter = Reporter.getInstance();
+	
 	//Singleton shit
 	private static RynekHistory instance = null;
 	private RynekHistory() 
 	{
+		
 	}
 
 	public static RynekHistory getInstance() {
@@ -12,6 +39,116 @@ public class RynekHistory {
 	         instance = new RynekHistory();
 	      }
 	      return instance;
+	}
+	
+	//---------------------------
+	
+	//usuwa wszystkie dane tymczasowe miedzy kolejnymi krokami symulacji
+	public void reset(int liczbaHandlowcow)
+	{
+		historyListaFunkcjiUzytecznosci.clear();
+		historiaCen.clear();
+		
+		/*
+		reportHandelResults = new ArrayList<>();
+		historyListaFunkcjiUzytecznosci = new ArrayList<ArrayList<ArrayList<Point>>>();
+		
+		int a=0;
+		while (a<liczbaHandlowcow)
+		{
+			//nie mam pojecia do czego jest ta linia
+			reportHandelResults.add(new Point());
+			historyListaFunkcjiUzytecznosci.add(new ArrayList<ArrayList<Point>>());
+			a++;
+		}
+
+		kontraktList = new ArrayList<>();*/
+	}
+	
+	public void createReportHistoriaCen()
+	{
+		
+		ArrayList<String>  hourList = createHourList(historiaCenPierwszeCeny.size());
+		ArrayList<String>  dayList = createDayList(historiaCenPierwszeCeny.size());
+		
+		//ArrayList<String> dayList, ArrayList<String> hourList,  ArrayList<Double> oglaszaneCeny, 
+		//ArrayList<Double> finalneCeny, ArrayList<Double> wolumenHandlu
+		
+		/*print (historiaCenPierwszeCeny.size());
+		print (historiaCenFinalneCeny.size());
+		print (historiaCenWolumenHandlu.size());*/
+		
+		reporter.createReportHistoriaCen(dayList, hourList,historiaCenPierwszeCeny,historiaCenFinalneCeny,historiaCenWolumenHandlu);
+	}
+	
+	ArrayList<String> createHourList(int liczbaElementow)
+	{
+		ArrayList<String> output = new ArrayList<>();
+		
+		int i=0;
+		while (i<liczbaElementow)
+		{
+			output.add(LokalneCentrum.getHour(i));
+			i++;
+		}
+
+		return output;
+	}
+	
+	ArrayList<String> createDayList(int liczbaElementow)
+	{
+		ArrayList<String> output = new ArrayList<>();
+		
+		int i=0;
+		while (i<liczbaElementow)
+		{
+			output.add(LokalneCentrum.getDay(i));
+			i++;
+		}
+
+		return output;
+	}
+	
+	ArrayList<ArrayList<Point>> skopiujListeFunkcjiUzytecznosci(ArrayList<ArrayList<Point>> listaFunkcjiUzytecznosci)
+	{
+		//zrob pusty obiekt i wypelnij go tak zeby byl taki jak listaFunkcjiUzytecznosci
+		ArrayList<ArrayList<Point>> output = new ArrayList<>();
+		
+		//zrob nowy obiekt tkai sam jak listaFunkcjiUzytecznosci
+		int i=0;
+		while (i<listaFunkcjiUzytecznosci.size())
+		{
+			ArrayList<Point> listWypelniana = new ArrayList<>();
+			ArrayList<Point> listKopiowana = listaFunkcjiUzytecznosci.get(i);
+			
+			int j=0;
+			while (j<listKopiowana.size())
+			{
+				Point p = new Point (listKopiowana.get(j));
+				
+				listWypelniana.add(p);
+				j++;
+			}
+			
+			output.add(listWypelniana);
+			
+			i++;
+		}
+		
+		return output;
+	}
+	
+	//dodaj 
+	public void addHistoryListaFunkcjiUzytecznosci(	ArrayList<ArrayList<Point>> listaFunkcjiUzytecznosci)
+	{		
+		//... a po wszystkim go dodaj
+		historyListaFunkcjiUzytecznosci.add(skopiujListeFunkcjiUzytecznosci(listaFunkcjiUzytecznosci));
+	}
+	
+	public void createReportHandelZFunkcjamiPopytu()
+	{	
+		reporter.createReportHandelZFunkcjamiPopytu(wolumenHandlu, sumaSprzedazy, sumaKupna, 
+				ListaFunkcjiUzytecznosciNaKoniecHandlu, cenaFinalna, historiaCen);
 	}
    	
 	

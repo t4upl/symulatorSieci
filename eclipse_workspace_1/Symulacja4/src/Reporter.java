@@ -9,8 +9,12 @@ import java.util.ArrayList;
 
 public class Reporter extends CoreClass {
 	
-	
+
 	String scenarioFolder;
+
+
+
+
 	
 	//Singleton shit
 	private static Reporter instance = null;
@@ -29,18 +33,138 @@ public class Reporter extends CoreClass {
 	
 	//---------------------------
 	
-	//-----------------------------------
-	//klasa reprezentuje rpaort w postaci: header (klucz wartosc), searator, header tabeli dnaych, tabela dnaych	
-	class GridReport
+	//---------------------------
+	
+	class CoreReport
 	{
-		int headerLiczbaLinii =30;
-		int dataLines=0;
 		String pathToFile;
+
 		
 		String separator="###";
+		int headerLiczbaLinii =30;
 		
 		//postaci key-value
 		ArrayList<String> headerList= new ArrayList<>();
+		
+		public void addToHeader(String key, double value)
+		{
+			headerList.add(key+","+double2String(value));
+		}
+		
+		public void addToHeader(String key, Boolean value)
+		{
+			headerList.add(key+","+value);
+		}
+		
+		public void addToHeader(String key, String value)
+		{
+			headerList.add(key+","+value);
+		}
+		
+		public void addToHeader(String key, int value)
+		{
+			headerList.add(key+","+value);
+		}
+		
+		public void setPathToFile(String pathToFile)
+		{
+			this.pathToFile =pathToFile;
+		}
+		
+		
+		String getfolderName()
+		{
+			String[] s2 =pathToFile.split("\\\\");
+			String output="";
+			
+			int i=0;
+			while (i<s2.length-1)
+			{
+				if (i>0)
+				{
+					output+="\\";
+				}
+				output+=s2[i];
+				//print("getfolderName " +s2[i]);
+				i++;
+			}
+			
+			return output;
+		}
+		
+		void dropHeader(Writer writer)
+		{
+			int i=0;
+			while (i<headerLiczbaLinii)
+			{
+				if (i<headerList.size())
+				{
+					writerWriteLine(writer,headerList.get(i));
+				}
+				else
+				{
+					writerWriteLine(writer,"");
+				}
+				i++;
+			}
+			
+			writerWriteLine(writer,separator);
+		}
+		
+	}
+	//----------------------
+	
+	
+	//klasa okrelsa luzniejsza wersje Grid Report, wymaga zdefiniownaia headera postaci, klucz,wartosc
+	// glowana czesc raportu gneerowana linia po linii
+	class HorizontalReport extends CoreReport
+	{
+
+
+		ArrayList<String> linesList= new ArrayList<>();
+		
+		public void addLine(String line)
+		{
+			linesList.add(line);
+		}
+		
+		public void dropToFile()
+		{
+			String folder =getfolderName();
+			createFolderCascade(folder);
+			
+			Writer writer;
+			try {
+				writer = new FileWriter(pathToFile);
+				dropHeader(writer);
+				dropLines(writer);
+				
+				writer.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+				getInput("ERROR in dropToFile");
+			}
+		}
+		
+		void dropLines(Writer writer)
+		{
+			int i=0;
+			while (i<linesList.size())
+			{
+				String line =linesList.get(i);
+				writerWriteLine(writer,line);
+				i++;
+			}
+		}
+		
+
+	}
+	
+	//-----------------------------------
+	//klasa reprezentuje rpaort w postaci: header (klucz wartosc), searator, header tabeli dnaych, tabela dnaych	
+	class GridReport extends CoreReport
+	{
+		int dataLines=0;
 		
 		//nazwy kolumn w tabeli
 		ArrayList<String> dataHeaderList= new ArrayList<>();
@@ -123,51 +247,9 @@ public class Reporter extends CoreClass {
 			}
 		}
 		
-		public void addToHeader(String key, double value)
-		{
-			headerList.add(key+","+value);
-		}
+
 		
-		public void addToHeader(String key, Boolean value)
-		{
-			headerList.add(key+","+value);
-		}
-		
-		public void addToHeader(String key, String value)
-		{
-			headerList.add(key+","+value);
-		}
-		
-		public void addToHeader(String key, int value)
-		{
-			headerList.add(key+","+value);
-		}
-		
-		public void setPathToFile(String pathToFile)
-		{
-			this.pathToFile =pathToFile;
-		}
-		
-		
-		String getfolderName()
-		{
-			String[] s2 =pathToFile.split("\\\\");
-			String output="";
-			
-			int i=0;
-			while (i<s2.length-1)
-			{
-				if (i>0)
-				{
-					output+="\\";
-				}
-				output+=s2[i];
-				//print("getfolderName " +s2[i]);
-				i++;
-			}
-			
-			return output;
-		}
+
 		
 		public void dropToFile()
 		{
@@ -242,24 +324,7 @@ public class Reporter extends CoreClass {
 			}
 		}
 		
-		void dropHeader(Writer writer)
-		{
-			int i=0;
-			while (i<headerLiczbaLinii)
-			{
-				if (i<headerList.size())
-				{
-					writerWriteLine(writer,headerList.get(i));
-				}
-				else
-				{
-					writerWriteLine(writer,"");
-				}
-				i++;
-			}
-			
-			writerWriteLine(writer,separator);
-		}
+
 		
 		String csvSpace(int number)
 		{
@@ -361,7 +426,11 @@ public class Reporter extends CoreClass {
 			gridReport.addDataToTable("koszt",d.getCost());
 			gridReport.addDataToTable("kupuj",d.getKupuj());
 			
-
+			
+			gridReport.addDataToTable("koszt(opt)",d.getKoszt_opt());
+			gridReport.addDataToTable("koszt_handel",d.getKoszt_handel());
+			gridReport.addDataToTable("koszt_Zew",d.getKoszt_Zew());
+			gridReport.addDataToTable("koszt_sklad",d.getKoszt_sklad());
 
 			i++;
 		}
@@ -399,6 +468,8 @@ public class Reporter extends CoreClass {
 			
 			gridReport.addDataToTable("EVbinKupuj",ev.getEVbinKupuj());
 			gridReport.addDataToTable("Status",ev.getStatus());
+			
+			gridReport.addDataToTable("koszt_EV",ev.getKoszt_EV());
 			
 			
 			i++;
@@ -465,12 +536,17 @@ public class Reporter extends CoreClass {
 		gridReport.addToHeader("Cost no reserve", prosument.getCostNoReserve());
 		gridReport.addToHeader("Reserve", prosument.getReserveBonus());
 		gridReport.addToHeader("Report note", prosument.getReportNote());
+		
+		gridReport.addToHeader("Koszt baterii", Stale.kosztAmortyzacjiBaterii);
+		gridReport.addToHeader("cena zewnetrzna", Stale.cenaDystrybutoraZewnetrznego);
+
+		
 	}
+	
 	
 	
 	public void createProsumentReport(ProsumentEV prosumentEV)
 	{
-		print ("createProsumentReport - hello ");
 		
 		String pathToFile =scenarioFolder+"\\"+"agregate"+"\\"+prosumentEV.getID()+".csv";
 		if (prosumentEV.getID()<Stale.liczbaProsumentow)
@@ -577,4 +653,239 @@ public class Reporter extends CoreClass {
 		
 		//getInput("setUpScenarioFolder -end");
 	}
+	
+	//TODO
+	public void createReportHistoriaCen(ArrayList<String> dayList, ArrayList<String> hourList,  ArrayList<Double> oglaszaneCeny, 
+			ArrayList<Double> finalneCeny, ArrayList<Double> wolumenHandlu)
+	{
+		
+		String pathToFile = scenarioFolder+"\\handel\\pierwszeCeny_"+Stale.scenariusz+".csv";
+		
+		GridReport gridReport = new GridReport();
+		gridReport.setPathToFile(pathToFile);
+		
+		createReportHistoriaCenHeader(gridReport, pathToFile);
+		createReportHistoriaCenDataHeader(gridReport);
+		
+		createReportHistoriaCenFillout(gridReport,dayList, hourList, oglaszaneCeny, finalneCeny, wolumenHandlu);
+		
+		gridReport.dropToFile();		
+	}
+	
+	void createReportHistoriaCenFillout(GridReport gridReport, ArrayList<String> dayList, ArrayList<String> hourList,  
+			ArrayList<Double> oglaszaneCeny, ArrayList<Double> finalneCeny, ArrayList<Double> wolumenHandlu)
+	{
+		int i=0;
+		while (i<dayList.size())
+		{	
+			gridReport.addDataToTable("Day",dayList.get(i));
+			gridReport.addDataToTable("Hour",hourList.get(i));
+			gridReport.addDataToTable("Pierwsze ceny",oglaszaneCeny.get(i));
+			gridReport.addDataToTable("Finalne ceny",finalneCeny.get(i));
+			gridReport.addDataToTable("Wolumen handlu", wolumenHandlu.get(i));
+			i++;
+		}
+	}
+	
+	void createReportHistoriaCenHeader(GridReport gridReport, String path)
+	{
+		gridReport.addToHeader("Path",path.replace("\\", ",") );
+		gridReport.addToHeader("Scenariusz",Stale.scenariusz );
+	}
+	
+	void createReportHistoriaCenDataHeader(GridReport gridReport)
+	{
+		gridReport.addDataHeader("Day");
+		gridReport.addDataHeader("Hour");
+		gridReport.addDataHeader("Pierwsze ceny");
+		gridReport.addDataHeader("Finalne ceny");
+		gridReport.addDataHeader("Wolumen handlu");
+	}
+	
+	String getHourForPath()
+	{
+		String s = LokalneCentrum.getCurrentHour();
+		return s.replaceAll(":", "_");
+	}
+	
+	String keyValue(String key, String value)
+	{
+		return key+","+value;
+	}
+	
+	//TODO
+	public void createReportHandelZFunkcjamiPopytu(	double wolumenHandlu, double sumaSprzedazy, double sumaKupna, 
+			ArrayList<ArrayList<Point>> ListaFunkcjiUzytecznosci, double cenaKontraktowa, ArrayList<Double> historiaCen)
+	{
+		String pathToFile = scenarioFolder+"\\handel\\"+LokalneCentrum.getCurrentDay()+"\\"+getHourForPath()+"\\handelZFunkcjami.csv"; //pierwszeCeny_"+Stale.scenariusz+".csv";
+		
+		HorizontalReport horizontalReport = new HorizontalReport();
+		horizontalReport.setPathToFile(pathToFile);
+		
+		createReportHandelZFunkcjamiPopytuHeader(horizontalReport, wolumenHandlu, sumaSprzedazy, sumaKupna, cenaKontraktowa, historiaCen);
+		createReportHandelZFunkcjamiPopytuFillOut(horizontalReport, ListaFunkcjiUzytecznosci);
+		
+		
+
+		horizontalReport.dropToFile();		
+
+
+	}
+	
+	void createReportHandelZFunkcjamiPopytuFillOut(HorizontalReport horizontalReport, ArrayList<ArrayList<Point>> ListaFunkcjiUzytecznosci)
+	{
+		int i=0;
+		while(i<ListaFunkcjiUzytecznosci.size())
+		{
+			horizontalReport.addLine("ID,"+i);
+			
+			ArrayList<Point> list1 = ListaFunkcjiUzytecznosci.get(i);
+			
+			String prices="ceny:";
+			String energia="energia:";
+			String alfa="alfa:";
+			String beta="beta:";
+			
+			int j=0;
+			while (j<list1.size())
+			{
+				if (j>-1)
+				{
+					prices+=",";
+					energia+=",";
+					alfa+=",";
+					beta+=",";
+				}
+				
+				Point p =list1.get(j);
+				
+				prices+=double2String(p.getPrice());
+				energia+=double2String(p.getIloscEnergiiDoKupienia());
+				alfa+=double2String(p.getAlfa());
+				beta+=double2String(p.getBeta());
+				
+				j++;
+			}
+			
+			horizontalReport.addLine(prices);
+			horizontalReport.addLine(energia);
+			horizontalReport.addLine(alfa);
+			horizontalReport.addLine(beta);
+
+			
+			horizontalReport.addLine("");
+			i++;
+		}
+	}
+	
+	void createReportHandelZFunkcjamiPopytuHeader(HorizontalReport horizontalReport,double wolumenHandlu, double sumaSprzedazy, 
+			double sumaKupna,double cenaKontraktowa, ArrayList<Double> historiaCen)
+	{
+		horizontalReport.addToHeader("Path",horizontalReport.pathToFile.replace("\\", ",") );
+		horizontalReport.addToHeader("wolumenHandlu",wolumenHandlu );
+		horizontalReport.addToHeader("sumaSprzedazy",sumaSprzedazy);
+		horizontalReport.addToHeader("sumaKupna",sumaKupna );
+		horizontalReport.addToHeader("cenaKontraktowa",cenaKontraktowa );
+		
+		String historiaCenString ="";
+		
+		int i=0;
+		while (i<historiaCen.size())
+		{
+			if (i>0)
+			{
+				historiaCenString+=",";
+			}
+			
+			historiaCenString+=double2String(historiaCen.get(i));
+			i++;
+		}
+		
+		horizontalReport.addToHeader("historiaCen",historiaCenString );
+		
+
+	}
+	
+	String getfolderName(String pathToFile)
+	{
+		String[] s2 =pathToFile.split("\\\\");
+		String output="";
+		
+		int i=0;
+		while (i<s2.length-1)
+		{
+			if (i>0)
+			{
+				output+="\\";
+			}
+			output+=s2[i];
+			//print("getfolderName " +s2[i]);
+			i++;
+		}
+		
+		return output;
+	}
+	
+	String double2String(Double double1)
+	{
+		return String.format("%.8f", double1);
+	}
+	
+	
+	//TODO
+	public void createReportSterowanie(Prosument prosument, String fileName, ArrayList<DayData> dList, ArrayList<EVData> eVList )
+	{
+		//getInput("createReportSterowania");
+		
+		String pathToFile =scenarioFolder+"\\"+prosument.getID()+"\\predykcje\\"+
+				LokalneCentrum.getCurrentDay()+"\\"+getHourForPath()+"\\"+fileName+".csv";
+	
+		GridReport gridReport = new GridReport();
+		gridReport.setPathToFile(pathToFile);
+		
+		createProsumentReportHeader(gridReport, prosument,pathToFile);
+		
+		createSterowanieDataHeader(gridReport);
+
+		createSterowanieFillOutReportDayDataLoop(gridReport,dList );
+		createReportSterowanieEVDataLoop(gridReport,eVList);
+
+		//createProsumentFillOutReport(prosument, gridReport);
+		
+		gridReport.dropToFile();
+
+	}
+	
+	void createReportSterowanieEVDataLoop(GridReport gridReport, ArrayList<EVData> eVlist)
+	{
+		int i=0;
+		while (i<eVlist.size())
+		{
+			EVData ev = eVlist.get(i);
+			gridReport.addDataToTable("EV", ev.getEV());
+			
+			gridReport.addDataToTable("EB_EV", ev.getEB_EV());
+			gridReport.addDataToTable("EV_EB",ev.getEV_EB() );
+			gridReport.addDataToTable("Zew_EV", ev.getZew_EV() );
+			gridReport.addDataToTable("G_EV", ev.getG_EV() );
+			gridReport.addDataToTable("EV_c", ev.getEV_c());
+			gridReport.addDataToTable("EV_EM",ev.getEV_EM() );
+			gridReport.addDataToTable("EM_EV", ev.getEM_EV() );
+			gridReport.addDataToTable("EVbinKupuj",ev.getEVbinKupuj() );
+			gridReport.addDataToTable("Status",ev.getStatus() );
+			gridReport.addDataToTable("koszt_EV",ev.getKoszt_EV() );
+			
+			i++;
+		}
+		
+	}
+	
+	//TODO
+	//uzywane tylko gdy wirtualny prosument skonsumowal EV,
+	//w przeicwnym wypadku uzywnay jest raport dla zwyklego rposuemtna
+	public void createReportVirtualProsument(ProsumentVirtual prosument)
+	{
+		getInput("hello form createProsumentReport");
+	}
+	
 }

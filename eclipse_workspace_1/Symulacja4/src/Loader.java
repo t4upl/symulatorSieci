@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Loader extends CoreClass {
 
@@ -114,10 +115,6 @@ public class Loader extends CoreClass {
 		int liczbaDodatkowychDni =3;
 		
 		
-		
-		
-		
-		
 		//czy wczytwyanie doszlo do glownego ciala pliku
         Boolean isBody=false;
         Boolean isEndDateReached=false;
@@ -136,7 +133,6 @@ public class Loader extends CoreClass {
  	        {
  	        	if (isBody)
  	        	{	
- 	        		//print(line);
  	        		
 	        		String[] s2 = line.split(",");
 	        		String dayHour = s2[0];
@@ -173,13 +169,123 @@ public class Loader extends CoreClass {
  		} catch (Exception e) {
  			print("createHoursList EXCEPTION");
  			e.printStackTrace();
- 		}        
-        
-
-		
-		print (pathToData);
-
+ 		}
 		
 		return outputList;
 	}
+	
+	//TODO
+	//wczytaj predykcje cen
+	public ArrayList<Double> loadPredykcjeCen()
+	{
+		String pathToData = Stale.folderZDanymi+"\\ceny\\pierwszeCeny_"+Stale.scenariusz+".csv";
+
+		ArrayList<Double> output = new ArrayList<>();
+		
+        BufferedReader br = null;
+        String line ="";
+        Boolean isBody =false;
+        
+        int i=0;
+        //index kolumeny pierwsze ceny
+        int indexOfPierwszeCeny=-1;
+        
+        //nazwa kolumny 
+        String columnName= "Finalne ceny";
+        
+		
+       try {
+ 			br = new BufferedReader(new FileReader(pathToData));
+ 	        while ((line = br.readLine()) != null)
+ 	        {
+ 	        	if (isBody)
+ 	        	{	
+ 	        		if (i==0)
+ 	        		{
+ 	        			String header = line;
+ 	        			String[] s2 = header.split(",");
+ 	        			
+ 	        			ArrayList<String> list1 = new ArrayList<>( Arrays.asList(s2));
+ 	        			indexOfPierwszeCeny = list1.indexOf(columnName);
+ 	        			
+ 	        			//trap
+ 	        			if (indexOfPierwszeCeny==-1)
+ 	        			{
+ 	        				getInput("ERROR in loadPredykcjeCen");
+ 	        			}
+ 	        			
+ 	        		}else
+ 	        		{
+ 	        			String[] s2 = line.split(",");
+ 	        			output.add(Double.valueOf(s2[indexOfPierwszeCeny]));
+
+ 	        		} 	        		
+ 	        		
+ 	        		i++;
+ 	        	}
+ 	        	else
+ 	        	{
+ 		        	if (line.equals("###"))
+ 		        	{
+ 		        		isBody=true;
+ 		        	}
+ 	        	}
+ 	        }
+ 	        
+ 	        br.close();
+ 				
+ 		} catch (Exception e) {
+ 			print("loadPredykcjeCen EXCEPTION");
+ 			e.printStackTrace();
+ 		}        
+	
+		
+		return output;
+	}
+	
+	
+	//wczytuje dane z pliku cars/ID_cars i zwrac alise (#0- godizna wyjazdu, #1 -godizna powrotu)
+	//godizny zwracane w formacie HH:MM
+	ArrayList<String> loadCars(int ID)
+	{
+		
+		//samochody maja stare ID zacyznajace sie od 1, stad +1
+		String path = Stale.folderZDanymi+"\\cars\\"+(ID+1)+"_cars.txt";
+		
+		ArrayList<String> L1 = new ArrayList<String>();
+		
+		BufferedReader br = null;
+		
+		try {
+			br = new BufferedReader(new FileReader(path));
+			
+			String line;
+			
+			int a=0;
+			//wczytujesz tylko peirwsza linei stad warunek na a<1
+			while ((line=br.readLine())!=null && a<1)
+			{
+				
+				String[] s2 = line.split("#");
+				
+				//pozbyj sie :00 z konca (w pliku godizny sa trzymane w formacie HH:mm:ss)
+				String wyjazd = s2[1].substring(0, s2[1].length()-3);
+				String przyjazd = s2[2].substring(0, s2[2].length()-3);
+				
+				L1.add(wyjazd);
+				L1.add(przyjazd);
+
+				a++;
+			}
+			
+			br.close();
+		}
+		catch(Exception e)
+		{
+			print("Error in loadCars");
+		}
+		
+		return L1;
+	}		
+	
 }

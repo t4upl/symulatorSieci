@@ -7,9 +7,12 @@ public class ProsumentEV extends Prosument {
 	//lista zawiera dane dotyczace uzycia akumualtorow EV
 	private ArrayList<EVData> eVDataList = new ArrayList<>(); 
 	
+	
+	//Singletony
 	OptimizerEV optimizerEV = OptimizerEV.getInstance();
 	
 	
+	//--------------------------------------
 	public ArrayList<EVData> getEVDataList()
 	{
 		return this.eVDataList;
@@ -450,6 +453,7 @@ public class ProsumentEV extends Prosument {
 			a++;
 		}
 	}
+	
 	
 	
 }

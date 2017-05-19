@@ -1,0 +1,65 @@
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+public class Main {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		int[] vector = {1, 2, 1, 5, 2, 4, 1, 0, 1, 2, 6, 4, 5, 2, 3, 4, 1, 2};
+		
+		//generuj pary
+		int i=0;
+		while (i<vector.length)
+		{
+			int j=i+1;
+			while (j<vector.length)
+			{
+				if (vector[i]<=vector[j])
+				{
+					System.out.println("");
+					System.out.println(i+" "+vector[i]);
+					System.out.println(j+" "+vector[j]);
+				}
+				
+				j++;
+			}
+			
+			i++;
+		}
+		
+
+		
+	}
+	
+	int countVolume(int i, int j, int[] vector, int max)
+	{
+		int sum=0;
+		i++;
+		while (i<j)
+		{
+			int d = max -vector[i];
+			
+			if (d<0)
+			{
+				System.out.println("Soemthing went wrong");
+			}
+			
+			i++;
+		}
+		
+		return sum;
+	}
+	
+	
+
+}

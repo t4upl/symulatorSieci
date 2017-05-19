@@ -88,6 +88,7 @@ public class Loader extends CoreClass {
 			//wczytujesz tylko peirwsza linei stad warunek na a<1
 			while ((line=br.readLine())!=null && a<1)
 			{
+				print("CARS "+line);
 				String[] s2 = line.split("#");
 				
 				//pozbyj sie :00 z konca (w pliku godizny sa trzymane w formacie HH:mm:ss)

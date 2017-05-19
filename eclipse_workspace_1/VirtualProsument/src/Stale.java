@@ -2,7 +2,7 @@
 public class Stale {
 	
 	//dla scenariuszy z EV zawsze nazwa scenariusza+10
-	static final int scenariusz=19;
+	static final int scenariusz=17;
 	static final float cenaDystrybutoraZewnetrznego=0.56f;
 	
 	

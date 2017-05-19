@@ -29,12 +29,53 @@ public class DayData {
 	
 	double cenaNaLokalnymRynku=0;
 
+	
+	//koszta
+	
+	private double koszt_opt=0f;
+	double koszt_Zew=0f;
+	double koszt_sklad=0f;
+	double koszt_handel=0f;
 
 
-
+	//----------------------------
+	
+	
 
 	public void setConsumption(double consumption) {
 		this.consumption = consumption;
+	}
+
+	public double getKoszt_opt() {
+		return koszt_opt;
+	}
+
+	public void setKoszt_opt(double koszt_opt) {
+		this.koszt_opt = koszt_opt;
+	}
+
+	public double getKoszt_Zew() {
+		return koszt_Zew;
+	}
+
+	public void setKoszt_Zew(double koszt_Zew) {
+		this.koszt_Zew = koszt_Zew;
+	}
+
+	public double getKoszt_sklad() {
+		return koszt_sklad;
+	}
+
+	public void setKoszt_sklad(double koszt_sklad) {
+		this.koszt_sklad = koszt_sklad;
+	}
+
+	public double getKoszt_handel() {
+		return koszt_handel;
+	}
+
+	public void setKoszt_handel(double koszt_handel) {
+		this.koszt_handel = koszt_handel;
 	}
 
 	public void setGeneration(double generation) {
@@ -54,61 +95,6 @@ public class DayData {
 		this.cost = cost;
 	}
 
-	public double getzBateriiNaKonsumpcje() {
-		return zBateriiNaKonsumpcje;
-	}
-
-	public void setzBateriiNaKonsumpcje(double zBateriiNaKonsumpcje) {
-		this.zBateriiNaKonsumpcje = zBateriiNaKonsumpcje;
-	}
-
-	public double getzBateriiNaRynek() {
-		return zBateriiNaRynek;
-	}
-
-	public void setzBateriiNaRynek(double zBateriiNaRynek) {
-		this.zBateriiNaRynek = zBateriiNaRynek;
-	}
-
-	public double getzGeneracjiNaKonsumpcje() {
-		return zGeneracjiNaKonsumpcje;
-	}
-
-	public void setzGeneracjiNaKonsumpcje(double zGeneracjiNaKonsumpcje) {
-		this.zGeneracjiNaKonsumpcje = zGeneracjiNaKonsumpcje;
-	}
-
-	public double getzGeneracjiNaRynek() {
-		return zGeneracjiNaRynek;
-	}
-
-	public void setzGeneracjiNaRynek(double zGeneracjiNaRynek) {
-		this.zGeneracjiNaRynek = zGeneracjiNaRynek;
-	}
-
-	public double getzGeneracjiDoBaterii() {
-		return zGeneracjiDoBaterii;
-	}
-
-	public void setzGeneracjiDoBaterii(double zGeneracjiDoBaterii) {
-		this.zGeneracjiDoBaterii = zGeneracjiDoBaterii;
-	}
-
-	public double getzRynekNaKonsumpcje() {
-		return zRynekNaKonsumpcje;
-	}
-
-	public void setzRynekNaKonsumpcje(double zRynekNaKonsumpcje) {
-		this.zRynekNaKonsumpcje = zRynekNaKonsumpcje;
-	}
-
-	public double getzRynekDoBaterii() {
-		return zRynekDoBaterii;
-	}
-
-	public void setzRynekDoBaterii(double zRynekDoBaterii) {
-		this.zRynekDoBaterii = zRynekDoBaterii;
-	}
 
 	public void setKupuj(double kupuj) {
 		this.kupuj = kupuj;
@@ -274,36 +260,41 @@ public class DayData {
 	}
 	
 	//ID and a for debug
-		void addDayData(DayData d2,int ID, int a)
-		{
-			
-			DayData d1 =this;
-			
-			//adding hours works becaus d2 always has an hour
-			d1.setHour(d2.getHour());
-			d1.setDay(d2.getDay());
-			
-			d1.setConsumption(d1.getConsumption()+d2.getConsumption());
-			d1.setGeneration(d1.getGeneration()+d2.getGeneration());
-			d1.setTrueGeneration(d1.getTrueGeneration()+d2.getTrueGeneration());
-			
-			d1.setStanBateriiNaPoczatkuSlotu(d1.getStanBateriiNaPoczatkuSlotu()+d2.getStanBateriiNaPoczatkuSlotu());
-			
-			d1.setZBateriiNaKonsumpcje(d1.getZBateriiNaKonsumpcje()+d2.getZBateriiNaKonsumpcje());
-			d1.setZBateriiNaRynek(d1.getZBateriiNaRynek()+d2.getZBateriiNaRynek());
-			
-			
-			d1.setZGeneracjiNaKonsumpcje(d1.getZGeneracjiNaKonsumpcje()+d2.getZGeneracjiNaKonsumpcje());
-			d1.setZGeneracjiNaRynek(d1.getZGeneracjiNaRynek()+d2.getZGeneracjiNaRynek());
-			d1.setZGeneracjiDoBaterii(d1.getZGeneracjiDoBaterii()+d2.getZGeneracjiDoBaterii());
-			
-			d1.setZRynekNaKonsumpcje(d1.getZRynekNaKonsumpcje()+d2.getZRynekNaKonsumpcje());
-			d1.setZRynekDoBaterii(d1.getZRynekDoBaterii()+d2.getZRynekDoBaterii());
-			
-			d1.setCost(d1.getCost()+d2.getCost());
-			
-			d1.setCenaNaLokalnymRynku(d2.getCenaNaLokalnymRynku());
+	void addDayData(DayData d2,int ID, int a)
+	{
+		
+		DayData d1 =this;
+		
+		//adding hours works becaus d2 always has an hour
+		d1.setHour(d2.getHour());
+		d1.setDay(d2.getDay());
+		
+		d1.setConsumption(d1.getConsumption()+d2.getConsumption());
+		d1.setGeneration(d1.getGeneration()+d2.getGeneration());
+		d1.setTrueGeneration(d1.getTrueGeneration()+d2.getTrueGeneration());
+		
+		d1.setStanBateriiNaPoczatkuSlotu(d1.getStanBateriiNaPoczatkuSlotu()+d2.getStanBateriiNaPoczatkuSlotu());
+		
+		d1.setZBateriiNaKonsumpcje(d1.getZBateriiNaKonsumpcje()+d2.getZBateriiNaKonsumpcje());
+		d1.setZBateriiNaRynek(d1.getZBateriiNaRynek()+d2.getZBateriiNaRynek());
+		
+		
+		d1.setZGeneracjiNaKonsumpcje(d1.getZGeneracjiNaKonsumpcje()+d2.getZGeneracjiNaKonsumpcje());
+		d1.setZGeneracjiNaRynek(d1.getZGeneracjiNaRynek()+d2.getZGeneracjiNaRynek());
+		d1.setZGeneracjiDoBaterii(d1.getZGeneracjiDoBaterii()+d2.getZGeneracjiDoBaterii());
+		
+		d1.setZRynekNaKonsumpcje(d1.getZRynekNaKonsumpcje()+d2.getZRynekNaKonsumpcje());
+		d1.setZRynekDoBaterii(d1.getZRynekDoBaterii()+d2.getZRynekDoBaterii());
+		
+		d1.setCost(d1.getCost()+d2.getCost());
+		
+		d1.setCenaNaLokalnymRynku(d2.getCenaNaLokalnymRynku());
+		
+		
+		
+		//tylko dodawanie kosztow handluy am sens
+		koszt_handel+=d2.getKoszt_handel();
 
-		}
+	}
 	
 }

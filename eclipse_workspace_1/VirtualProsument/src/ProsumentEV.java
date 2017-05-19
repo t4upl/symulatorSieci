@@ -190,9 +190,7 @@ public class ProsumentEV extends Prosument {
 			
 			eVDataListSuma.add(ev);
 		}
-		
-		//getInput("initializeEVDataListSuma - end");
-		
+				
 	}
 	
 	

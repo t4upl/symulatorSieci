@@ -1,0 +1,139 @@
+
+public class EVData {
+
+	//0 - dom, 1- podroz z domu do pracy, 2 - praca, 3 - podroz z pracy do domu
+	int status=0;
+
+	//stan energii na poczatku slotu
+	double EV=0;
+	double EV_c=0; 
+	double EV_EB=0;
+	double EB_EV=0;
+	double G_EV=0;
+	double Zew_EV=0;
+	
+	double EM_EV=0;
+	double EV_EM=0;
+	
+	//zmiennna binarna mowiaca czy EV kupuej czy sprzedaje
+	double EVbinKupuj=0;
+	
+	double koszt_EV=0;
+
+	
+	//--------------------------------
+	//GETTERS SETTERS
+	
+	
+		
+	public int getStatus() {
+		return status;
+	}
+
+	public double getKoszt_EV() {
+		return koszt_EV;
+	}
+
+	public void setKoszt_EV(double koszt_EV) {
+		this.koszt_EV = koszt_EV;
+	}
+
+	public double getEVbinKupuj() {
+		return EVbinKupuj;
+	}
+
+	public void setEVbinKupuj(double eVbinKupuj) {
+		EVbinKupuj = eVbinKupuj;
+	}
+
+	public double getEM_EV() {
+		return EM_EV;
+	}
+
+	public void setEM_EV(double eM_EV) {
+		EM_EV = eM_EV;
+	}
+
+	public double getEV_EM() {
+		return EV_EM;
+	}
+
+	public void setEV_EM(double eV_EM) {
+		EV_EM = eV_EM;
+	}
+
+	public double getEV() {
+		return EV;
+	}
+
+	public void setEV(double eV) {
+		EV = eV;
+	}
+
+	public double getEV_c() {
+		return EV_c;
+	}
+
+	public void setEV_c(double eV_c) {
+		EV_c = eV_c;
+	}
+
+	public double getEV_EB() {
+		return EV_EB;
+	}
+
+	public void setEV_EB(double eV_EB) {
+		EV_EB = eV_EB;
+	}
+
+	public double getEB_EV() {
+		return EB_EV;
+	}
+
+	public void setEB_EV(double eB_EV) {
+		EB_EV = eB_EV;
+	}
+
+	public double getG_EV() {
+		return G_EV;
+	}
+
+	public void setG_EV(double g_EV) {
+		G_EV = g_EV;
+	}
+
+	public double getZew_EV() {
+		return Zew_EV;
+	}
+
+	public void setZew_EV(double zew_EV) {
+		Zew_EV = zew_EV;
+	}
+
+	public void setStatus(int status) {
+		this.status = status;
+	}
+	
+	public void addEVData(EVData eVData)
+	{
+		EV+=eVData.getEV();
+		EV_c+=eVData.getEV_c();
+		EV_EB+=eVData.getEV_EB();
+		
+		EB_EV+=eVData.getEB_EV();
+		G_EV+=eVData.getG_EV();
+		Zew_EV+=eVData.getZew_EV();
+		
+		double =0;
+		
+		double EM_EV=0;
+		double EV_EM=0;
+		
+		//zmiennna binarna mowiaca czy EV kupuej czy sprzedaje
+		double EVbinKupuj=0;
+		
+		double koszt_EV=0;
+	}
+		
+	
+}

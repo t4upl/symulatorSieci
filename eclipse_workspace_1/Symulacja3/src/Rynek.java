@@ -117,6 +117,7 @@ public class Rynek extends CoreClass {
 	//Odpalanae na poczatku kazdego simulationStepu
 	public void reset()
 	{
+		print ("Rynek reset");
 		//this line is for debug purposes only
 		
 		iteracja =0;

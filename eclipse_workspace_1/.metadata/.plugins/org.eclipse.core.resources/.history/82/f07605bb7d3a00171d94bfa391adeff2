@@ -1,0 +1,880 @@
+import java.util.ArrayList;
+
+import ilog.concert.IloException;
+import ilog.concert.IloNumExpr;
+import ilog.concert.IloNumVar;
+import ilog.cplex.IloCplex;
+
+public class OptimizerEV extends OptimizerCore {
+
+	//set it to false for test (test =no EVs)
+	final Boolean EVwystpeujeWmodelu =true;
+	Form form;
+
+	
+	IloNumVar[] EV;
+	IloNumVar[] EV_c; 
+	IloNumVar[] EV_EB;
+	IloNumVar[] EB_EV;
+	IloNumVar[] G_EV;
+	IloNumVar[] Zew_EV;
+	IloNumVar[] EM_EV;
+	IloNumVar[] EV_EM;
+	
+	
+	double[] EV_solved;
+	double[] EV_c_solved; 
+	double[] EV_EB_solved;
+	double[] EB_EV_solved;
+	double[] G_EV_solved;
+	double[] Zew_EV_solved;
+	double[] EM_EV_solved;
+	double[] EV_EM_solved;
+	
+	//czy EV kupuje na lokalnym rynku
+	IloNumVar[] binEVKupuj;
+	
+	
+	IloNumVar[] EM_EV_Z;
+	IloNumVar[] EV_EM_Z;
+	
+	double[] koszt_EV_solved;
+	double[] binEVKupuj_solved;	
+
+	
+	
+	//-----------------------------------
+	//Singleton part
+	private static OptimizerEV instance = null;
+	private OptimizerEV() 
+	{
+	}
+	
+	public static OptimizerEV getInstance() {
+	      if(instance == null) {
+	         instance = new OptimizerEV();
+	      }
+	      return instance;
+	}
+	
+	
+	//--------------------------------------------------
+	//TODO
+	public static class Form extends CoreClass
+	{
+		ArrayList<Double> consumption = new ArrayList<>();
+		ArrayList<Double> generation = new ArrayList<>();
+		
+		ArrayList<Integer> statusyEV = new ArrayList<>();
+		
+		//"Stale" w sensie Prosuemtna nie symulacji
+		double pojemnoscBaterii;
+		double predkoscBaterii;
+		
+		//ceny na rynku lokalnym
+		ArrayList<Double> prices = new ArrayList<>();
+		
+		double stanPoczatkowyEB;
+		double stanPoczatkowyEV;
+
+		DayData ograniczeniaHandluDom;
+		DayData ograniczeniaHandluEV;
+		
+		//nie jest potrzebne do wyznaczenia steorwnaia, ale przydjae sie do debugu
+		int IDprosumenta;
+		
+		
+		Boolean isEVAvailable;
+		
+		
+		
+		public double getPredkoscBaterii() {
+			return predkoscBaterii;
+		}
+		public void setPredkoscBaterii(double predkoscBaterii) {
+			this.predkoscBaterii = predkoscBaterii;
+		}
+		public Boolean getIsEVAvailable() {
+			return isEVAvailable;
+		}
+		public void setIsEVAvailable(Boolean isEVAvailable) {
+			this.isEVAvailable = isEVAvailable;
+		}
+		public int getIDprosumenta() {
+			return IDprosumenta;
+		}
+		public void setIDprosumenta(int iDprosumenta) {
+			IDprosumenta = iDprosumenta;
+		}
+		public DayData getOgraniczeniaHandluDom() {
+			return ograniczeniaHandluDom;
+		}
+		public void setOgraniczeniaHandluDom(DayData ograniczeniaHandluDom) {
+			this.ograniczeniaHandluDom = ograniczeniaHandluDom;
+		}
+		public DayData getOgraniczeniaHandluEV() {
+			return ograniczeniaHandluEV;
+		}
+		public void setOgraniczeniaHandluEV(DayData ograniczeniaHandluEV) {
+			this.ograniczeniaHandluEV = ograniczeniaHandluEV;
+		}
+		public double getStanPoczatkowyEB() {
+			return stanPoczatkowyEB;
+		}
+		public void setStanPoczatkowyEB(double stanPoczatkowyEB) {
+			this.stanPoczatkowyEB = stanPoczatkowyEB;
+		}
+		public double getStanPoczatkowyEV() {
+			return stanPoczatkowyEV;
+		}
+		public void setStanPoczatkowyEV(double stanPoczatkowyEV) {
+			this.stanPoczatkowyEV = stanPoczatkowyEV;
+		}
+		public double getPojemnoscBaterii() {
+			return pojemnoscBaterii;
+		}
+		public void setPojemnoscBaterii(double pojemnoscBaterii) {
+			this.pojemnoscBaterii = pojemnoscBaterii;
+		}
+		
+		public ArrayList<Double> getPrices() {
+			return prices;
+		}
+		public void setPrices(ArrayList<Double> prices) {
+			this.prices = prices;
+		}
+		public ArrayList<Double> getConsumption() {
+			return consumption;
+		}
+		public void setConsumption(ArrayList<Double> consumption) {
+			this.consumption = consumption;
+		}
+		public ArrayList<Double> getGeneration() {
+			return generation;
+		}
+		public void setGeneration(ArrayList<Double> generation) {
+			this.generation = generation;
+		}
+		public ArrayList<Integer> getStatusyEV() {
+			return statusyEV;
+		}
+		public void setStatusyEV(ArrayList<Integer> statusyEV) {
+			this.statusyEV = statusyEV;
+		}
+		
+		
+		//---------------------
+		public void printOut()
+		{
+			print("\n-----------");
+			print("Form print\n");
+			print("Iteracja "+Rynek.getInstance().iteracja);
+			print(LokalneCentrum.getCurrentDay()+" "+LokalneCentrum.getCurrentHour());
+			
+			if (ograniczeniaHandluDom==null)
+			{
+				print("ograniczeniaHandluDom ==null");
+				print(statusyEV.get(0));
+				print(stanPoczatkowyEV);
+
+				
+			}
+			else
+			{
+				print("ograniczeniaHandluDom !=null");
+				print("ograniczeniaHandluDom");
+				print(ograniczeniaHandluDom.getKupuj());
+				print(ograniczeniaHandluDom.getGeneration());
+				print(ograniczeniaHandluDom.getConsumption());
+				
+				if (ograniczeniaHandluEV==null)
+				{
+					print("ograniczeniaHandluEV ==null");
+				}
+				else
+				{					
+					print("ograniczeniaHandluEV !=null");
+					print("\nograniczeniaHandluEV");
+					print(ograniczeniaHandluEV.getKupuj());
+					print(ograniczeniaHandluEV.getGeneration());
+					print(ograniczeniaHandluEV.getConsumption());	
+				}
+				
+				
+			}
+		}
+		
+	}
+	
+	//--------------------------------------
+	//TODO
+	
+	public static class Sterowanie
+	{
+		
+		ArrayList<DayData> dList = new ArrayList<>();
+		ArrayList<EVData> eVList = new ArrayList<>();
+		
+		public void addToDList(DayData d)
+		{
+			dList.add(d);
+		}
+		
+		public void addToEVList(EVData ev)
+		{
+			eVList.add(ev);
+		}
+		
+		public ArrayList<DayData> getDList()
+		{
+			return dList;
+		}
+		
+		public ArrayList<EVData> getEvList()
+		{
+			return eVList;
+		}
+		
+	}
+	
+	
+	//TODO
+	public Sterowanie wyznaczSterowanie(Form form24)
+	{
+		
+		Sterowanie sterowanie = new OptimizerEV.Sterowanie();		
+
+		try{
+			cplex = new IloCplex();
+			setVariables(form24);
+						
+			IloNumExpr objective = createObjective();
+
+			cplex.addMinimize(objective);
+			
+			dodajOgraniczenia();
+
+			cplex.setOut(null);			
+			if (cplex.solve())
+			{	
+				//print("cplex solved");
+				
+				if (LokalneCentrum.getCurrentDayHour().equals("2015-06-01 07:00"))
+				{
+					getInput("end #43");
+				}
+				
+				fillOutSolvedVariables(sterowanie);
+			
+				cplex.end();
+				//getInput("CPLEX END");
+			}
+			else
+			{
+				print("\n");
+				form.printOut();
+				print("ID prosumenta "+form.getIDprosumenta());
+				getInput("CPLEX FAILED!");
+			}			
+			
+		} catch (Exception e)
+		{
+			print ("ERROR in wyznaczSterowanie");
+			e.printStackTrace();
+			
+		}
+		
+		return sterowanie;
+	}
+	
+	
+	//TODO
+	public void fillOutSolvedVariables(Sterowanie sterowanie)
+	{
+		
+		fillOutSolvedVariablesSetSolvedDayData();
+		fillOutSolvedVariablesSetSolvedEVData();
+		
+		fillOutSolvedVariablesDayDataLoop(sterowanie);
+		fillOutSolvedVariablesEVDataLoop(sterowanie);
+		
+	}
+	
+	void fillOutSolvedVariablesDayDataLoop(Sterowanie sterowanie)
+	{
+		
+		int currentTime =LokalneCentrum.getTimeIndex();
+		
+		int i=0;
+		while (i<Stale.horyzontCzasowy)
+		{
+			DayData d = new DayData();
+			
+			sterowanie.addToDList(d);
+			
+			d.setDay(LokalneCentrum.getDay(currentTime+i));
+			d.setHour(LokalneCentrum.getHour(currentTime+i));
+			
+			d.setConsumption(form.getConsumption().get(i));
+			d.setTrueGeneration(form.getGeneration().get(i));
+			
+			d.setStanBateriiNaPoczatkuSlotu(EB_solved[i]);
+			
+			
+			d.setZBateriiNaKonsumpcje(EB_c_solved[i]);
+			d.setZBateriiNaRynek((1-binHandelKupuj_solved[i])*EB_s_solved[i]);
+			
+			d.setZGeneracjiNaKonsumpcje(G_c_solved[i]);
+			d.setZGeneracjiDoBaterii(G_sklad_solved[i]);
+			d.setZGeneracjiNaRynek((1-binHandelKupuj_solved[i])*G_s_solved[i]);
+			
+			d.setZRynekDoBaterii((binHandelKupuj_solved[i])*EM_s_solved[i]);
+			d.setZRynekNaKonsumpcje((binHandelKupuj_solved[i])*EM_c_solved[i]);
+			
+			d.setCenaNaLokalnymRynku(form.getPrices().get(i));
+			d.setKupuj(binHandelKupuj_solved[i]);
+			
+			d.setKoszt_opt(koszt_solved[i]);
+			d.setKoszt_Zew(koszt_Zew_solved[i]);
+			d.setKoszt_sklad(koszt_sklad_solved[i]);
+			d.setKoszt_handel(koszt_handel_solved[i]);
+
+			
+			i++;
+		}
+	}
+	
+	void fillOutSolvedVariablesEVDataLoop(Sterowanie sterowanie)
+	{	
+		int i=0;
+		while (i<Stale.horyzontCzasowy)
+		{
+			EVData ev = new EVData();
+			
+
+			ev.setKoszt_EV(koszt_EV_solved[i]);
+			
+			ev.setEV(EV_solved[i]);
+			ev.setEV_c(EV_c_solved[i]);
+			ev.setEV_EB(EV_EB_solved[i]);
+			ev.setEB_EV(EB_EV_solved[i]);
+			
+			ev.setG_EV(G_EV_solved[i]);
+			ev.setZew_EV(Zew_EV_solved[i]);
+						
+			ev.setEM_EV(binEVKupuj_solved[i]*EM_EV_solved[i]);
+			ev.setEV_EM((1-binEVKupuj_solved[i])*EV_EM_solved[i]);
+			
+			ev.setEVbinKupuj((int)binEVKupuj_solved[i]);
+			
+			//prosument bez EV nie ma statusow
+			if (form.isEVAvailable)
+			{
+				ev.setStatus(form.getStatusyEV().get(i));
+			}
+			else
+			{
+				//5 jako losowa liczba (ustaw statusy dla prosumenta bez EV)
+				ev.setStatus(5);
+			}
+						
+			sterowanie.addToEVList(ev);
+			i++;
+		}		
+		
+		
+		
+	}
+	
+	void fillOutSolvedVariablesSetSolvedDayData()
+	{
+		try {
+			EB_solved = cplex.getValues(EB);
+			EB_c_solved= cplex.getValues(EB_c); 
+			G_c_solved= cplex.getValues(G_c); 
+			EM_s_solved= cplex.getValues(EM_s);
+			G_sklad_solved= cplex.getValues(G_sklad);
+			G_s_solved= cplex.getValues(G_s);
+			EM_c_solved= cplex.getValues(EM_c);
+			EB_s_solved= cplex.getValues(EB_s);
+			
+			binHandelKupuj_solved =cplex.getValues(binHandelKupuj);
+					
+		} catch (IloException   e) {
+			e.printStackTrace();
+			getInput("ERROR in fillOutSolvedVariablesSetSolvedDayData");
+		} 
+		
+	}
+	
+	void fillOutSolvedVariablesSetSolvedEVData()
+	{
+		try {
+			EV_solved = cplex.getValues(EV);
+			EV_c_solved = cplex.getValues(EV_c); 
+			EV_EB_solved = cplex.getValues(EV_EB);
+			EB_EV_solved = cplex.getValues(EB_EV);
+			G_EV_solved = cplex.getValues(G_EV);
+			Zew_EV_solved = cplex.getValues(Zew_EV);
+			EM_EV_solved = cplex.getValues(EM_EV);
+			EV_EM_solved = cplex.getValues(EV_EM);
+			
+			koszt_solved = cplex.getValues(koszt);
+			koszt_Zew_solved = cplex.getValues(koszt_Zew);
+			koszt_sklad_solved = cplex.getValues(koszt_sklad);
+			koszt_EV_solved = cplex.getValues(koszt_EV);
+			koszt_handel_solved = cplex.getValues(koszt_handel);
+
+			binEVKupuj_solved =cplex.getValues(binEVKupuj);
+
+		} catch (IloException   e) {
+			e.printStackTrace();
+			getInput("ERROR in fillOutSolvedVariablesSetSolvedEVData");
+		} 
+		
+	}	
+	
+	//TODO
+	void dodajOgraniczenia()
+	{
+		try {
+			dodajOgraniczeniaHandlu();
+			dodajOgraniczeniaPoczatkowyStanBaterii();
+			dodajOgraniczeniaModelu();
+			dodajOgraniczeniaEV();
+		} catch (IloException e) {
+			e.printStackTrace();
+			getInput("ERROR in dodajOgraniczenia");
+		}
+
+	}
+	
+	//TODO
+	void dodajOgraniczeniaEVDlaPojedynczegoSamochodu() throws IloException
+	{	
+		ArrayList<Integer> statusList =form.statusyEV;
+		int i=0;
+		while(i<Stale.horyzontCzasowy)
+		{
+			
+			//akumualtor EV nie moze oddac wiecej niz ma
+			cplex.addGe(EV[i], cplex.sum(EV_c[i],EV_EB[i],cplex.diff(EV_EM[i], EV_EM_Z[i]) ));
+			
+			if (i+1<Stale.horyzontCzasowy)
+			{
+				cplex.addGe(Stale.predkoscAkumulatoraEV,cplex.diff(EV[i+1],EV[i]));
+				cplex.addLe(-Stale.predkoscAkumulatoraEV,cplex.diff(EV[i+1],EV[i]));
+			}
+			
+			int status = statusList.get(i);
+			
+			
+			switch (status){
+				case 0: ograniczeniaStatusuDom(i); break;
+				case 1: ograniczeniaStatusuDomPraca(i); 
+					break;
+				case 2:	ograniczeniaStatusuPraca(i); break;
+				case 3:	ograniczeniaStatusuPracaDom(i); 
+					break;
+				default: getInput("ERROR dodajOgraniczeniaEVDlaPojedynczegoSamochoduOgraniczeniaStatusu no status "+status);
+			}
+			i++;
+		}
+	}
+	
+	
+	//korzystane do debugu
+	void wylaczSamochod() throws IloException
+	{
+		int i=0;
+		while(i<Stale.horyzontCzasowy)
+		{
+			cplex.addEq(EV[i], 0);
+			cplex.addEq(EV_c[i], 0);
+			cplex.addEq(EV_EB[i], 0);
+			
+			cplex.addEq(EB_EV[i], 0);
+			cplex.addEq(G_EV[i], 0);
+			cplex.addEq(Zew_EV[i], 0);
+			
+			cplex.addEq(EV_EM[i],0);
+			cplex.addEq(EM_EV[i],0);
+			
+			i++;
+		}
+	}
+	
+	void ograniczeniaStatusuDom(int t) throws IloException
+	{
+		IloNumExpr expr1 = cplex.sum(EB_EV[t],G_EV[t],EV_EB[t],EV_c[t],Zew_EV[t]);
+		IloNumExpr expr2 = cplex.sum(EM_EV_Z[t],cplex.diff(EV_EM[t], EM_EV_Z[t]));
+		cplex.addGe(Stale.predkoscAkumulatoraEV, cplex.sum(expr1,expr2) );
+		
+		if ((t+1)<Stale.horyzontCzasowy)
+		{
+			IloNumExpr sum1 = cplex.sum(EV[t],EB_EV[t],G_EV[t], Zew_EV[t],EM_EV_Z[t] );
+			IloNumExpr dif1 = cplex.sum(EV_EB[t],EV_c[t],cplex.diff(EV_EM[t],EV_EM_Z[t]));
+			IloNumExpr prawaStrona = cplex.diff(sum1, dif1);
+			cplex.addEq(EV[t+1], prawaStrona);
+		}
+
+	}
+
+	void ograniczeniaStatusuDomPraca(int t) throws IloException
+	{
+		cplex.addGe(EV[t], Stale.podrozMinimumEnergii);
+		
+		IloNumExpr expr1 = cplex.sum(EB_EV[t],G_EV[t],EV_EB[t],EV_c[t],Zew_EV[t]);
+		IloNumExpr expr2 = cplex.sum(EM_EV_Z[t],cplex.diff(EV_EM[t], EV_EM_Z[t]));
+
+
+		cplex.addGe(Stale.podrozPredkoscAkumulatoraEV, cplex.sum(expr1,expr2));
+		
+		if ((t+1)<Stale.horyzontCzasowy)
+		{	
+			IloNumExpr sum1 = cplex.sum(EV[t],EB_EV[t],G_EV[t], Zew_EV[t],EM_EV_Z[t] );
+			IloNumExpr dif1 = cplex.sum(cplex.sum(EV_EB[t],EV_c[t],cplex.diff(EV_EM[t], EV_EM_Z[t])),Stale.podrozMinimumEnergii);
+			IloNumExpr prawaStrona = cplex.diff(sum1, dif1);
+			cplex.addEq(EV[t+1], prawaStrona);
+		}
+	}
+	
+	void ograniczeniaStatusuPraca(int t) throws IloException
+	{
+		//predkosc akumualtora
+		cplex.addGe(Stale.predkoscAkumulatoraEV, cplex.sum(EM_EV_Z[t],Zew_EV[t],cplex.diff(EV_EM[t], EV_EM_Z[t])  ));
+
+		//w slotach pdorozy akumualtor ma dosc energii zbey wykonac podroz
+		cplex.addGe(EV[t], Stale.podrozMinimumEnergii);
+		
+		if ((t+1)<Stale.horyzontCzasowy)
+		{
+			IloNumExpr prawaStrona = cplex.diff(cplex.sum(EV[t],Zew_EV[t],EM_EV_Z[t]), cplex.diff(EV_EM[t], EV_EM_Z[t]));
+			cplex.addEq(EV[t+1], prawaStrona);
+		}
+
+		//wylacz mozliwosc bezposredniego handlu miedzy gospodarstwem domowym a EV
+		cplex.addEq(EB_EV[t],0);
+		cplex.addEq(G_EV[t],0);
+		cplex.addEq(EV_EB[t],0);
+		cplex.addEq(EV_c[t],0);
+		
+		if (!Stale.isHandelWPracy)
+		{
+			cplex.addEq(EV_EM[t], 0);
+			cplex.addEq(EM_EV[t], 0);
+		}
+		
+
+	}
+	
+	void ograniczeniaStatusuPracaDom(int t) throws IloException
+	{
+		//predkosc akumualtora
+		cplex.addGe(Stale.podrozPredkoscAkumulatoraEV, cplex.sum(EM_EV_Z[t],Zew_EV[t],cplex.diff(EV_EM[t], EV_EM_Z[t])  ));
+		
+		
+		if ((t+1)<Stale.horyzontCzasowy)
+		{
+			IloNumExpr prawaStrona = cplex.diff(cplex.sum(EV[t],Zew_EV[t],EM_EV_Z[t]), cplex.diff(EV_EM[t], EV_EM_Z[t]));
+			prawaStrona = cplex.diff(prawaStrona, Stale.podrozMinimumEnergii);
+			
+			cplex.addEq(EV[t+1], prawaStrona);
+		}
+		
+		//wylacz mozliwosc bezposredniego handlu miedzy gospodarstwem domowym a EV
+		cplex.addEq(EB_EV[t],0);
+		cplex.addEq(G_EV[t],0);
+		cplex.addEq(EV_EB[t],0);
+		cplex.addEq(EV_c[t],0);
+		
+		if (!Stale.isHandelWPracy)
+		{
+			cplex.addEq(EV_EM[t], 0);
+			cplex.addEq(EM_EV[t], 0);
+		}
+		
+		
+	}
+		
+	
+	void dodajOgraniczeniaEV()
+	{
+		try {
+			if (EVwystpeujeWmodelu && form.isEVAvailable)
+			{
+				dodajOgraniczeniaEVDlaPojedynczegoSamochodu();
+			}	
+			else
+			{
+				wylaczSamochod();	
+			}
+		} catch (IloException e) {
+			
+			e.printStackTrace();
+			getInput("ERROR in dodajOgraniczeniaEV");
+		}
+	}
+	
+	
+	void dodajOgraniczeniaModelu()
+	{
+		try
+		{
+			int i=0;
+			while (i<Stale.horyzontCzasowy)
+			{
+				if (i+1<Stale.horyzontCzasowy)
+				{
+					dodajOgraniczCiaglosciBaterii(i);
+					dodajOgraniczPredkoscBateriiModulo(i);
+				}
+				
+				dodajOgraniczSkladowychGeneracji(i);
+				dodajOgraniczSkladowychBaterii(i);
+				dodajOgraniczWyrownanieKonsumpcji(i);
+				dodajOgraniczSkladowejPredkosciBaterii(i);
+				
+				
+				i++;
+			}
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+			getInput("Error in dodajOgraniczenia Modelu");
+		}
+	}
+	
+	
+	private void dodajOgraniczSkladowychGeneracji(int i) throws IloException
+	{
+		IloNumExpr prawaStrona = cplex.sum(G_c[i],G_sklad[i] ,G_EV[i],cplex.diff(G_s[i],G_s_Z[i]));
+		cplex.addGe(form.getGeneration().get(i),prawaStrona );
+	}
+	
+	private void dodajOgraniczSkladowychBaterii(int i) throws IloException
+	{
+		IloNumExpr prawaStrona = cplex.sum(EB_c[i],cplex.diff(EB_s[i],EB_s_Z[i]),EB_EV[i]  );
+		cplex.addGe(EB[i],prawaStrona );
+	}
+	
+	private void dodajOgraniczWyrownanieKonsumpcji(int i) throws IloException
+	{
+		IloNumExpr prawaStrona=cplex.sum(EM_c_Z[i],EB_c[i],G_c[i],EV_c[i]);
+		cplex.addGe(form.getConsumption().get(i),prawaStrona );
+	}
+	private void dodajOgraniczSkladowejPredkosciBaterii(int i) throws IloException
+	{
+		IloNumExpr expr1 =cplex.sum(EB_c[i],cplex.diff(EB_s[i],EB_s_Z[i]),G_sklad[i]);
+		IloNumExpr expr2 =cplex.sum(EM_s_Z[i],EB_EV[i],EV_EB[i] );
+		IloNumExpr prawaStrona= cplex.sum(expr1,expr2);
+		cplex.addGe(Stale.predkoscBaterii,prawaStrona);
+	}	
+
+	void dodajOgraniczCiaglosciBaterii(int i) throws IloException
+	{
+		IloNumExpr exp1 = cplex.diff(EB_s_Z[i],cplex.sum(EB_c[i],EB_s[i]));
+		IloNumExpr exp2 = cplex.sum(EM_s_Z[i],G_sklad[i],cplex.diff(EV_EB[i],EB_EV[i]));
+		
+		IloNumExpr prawaStrona=cplex.sum(EB[i],exp1,exp2);
+		cplex.addEq(EB[i+1], prawaStrona);
+	}
+	
+	private void dodajOgraniczPredkoscBateriiModulo(int t) throws IloException
+	{
+		double predkoscBaterii = Stale.predkoscBaterii;
+		cplex.addGe(predkoscBaterii, cplex.diff(EB[t+1],EB[t]));
+		cplex.addLe(-predkoscBaterii, cplex.diff(EB[t+1],EB[t]));
+	}	
+	
+	
+	void dodajOgraniczeniaPoczatkowyStanBaterii() throws IloException
+	{
+		cplex.addEq(form.getStanPoczatkowyEB(), EB[0]);
+		
+		//ograniczenie dziala tylko wtedy gdy ejst wlaczony EV
+		if (form.getIsEVAvailable())
+		{
+			cplex.addEq(form.getStanPoczatkowyEV(), EV[0]);
+		}
+	}
+
+	void dodajOgraniczeniaHandlu() throws IloException
+	{
+		if (form.getOgraniczeniaHandluDom()!=null)
+		{
+			
+			DayData handelOgraniczeniaDomu = form.getOgraniczeniaHandluDom();
+			
+			if (handelOgraniczeniaDomu.getKupuj()>0.5)
+			{
+				cplex.addEq(binHandelKupuj[0], 1);
+				cplex.addEq(handelOgraniczeniaDomu.getGeneration(), cplex.sum(EM_s[0],EM_c[0]));
+			}
+			else
+			{
+				cplex.addEq(binHandelKupuj[0], 0);
+				cplex.addEq(handelOgraniczeniaDomu.getConsumption(), cplex.sum(EB_s[0],G_s[0]));
+			}
+		}
+		
+		if (form.getOgraniczeniaHandluEV()!=null)
+		{
+		
+			DayData handelOgraniczeniaEV = form.getOgraniczeniaHandluEV();
+			if (handelOgraniczeniaEV.getKupuj()>0.5)
+			{	
+				cplex.addEq(binEVKupuj[0], 1);
+				cplex.addEq(handelOgraniczeniaEV.getGeneration(), EM_EV[0]);
+			}
+			else
+			{	
+				cplex.addEq(binEVKupuj[0], 0);
+				cplex.addEq(handelOgraniczeniaEV.getConsumption(), EV_EM[0]);
+			}		
+		}
+	}
+		
+	
+	
+	//TODO
+	private IloNumExpr createObjective() {
+		IloNumExpr objective = null;
+		
+		try {
+			int i =0;
+			while (i<Stale.horyzontCzasowy)
+			{
+
+				createObjectiveKosztZew(i);
+				createObjectiveKosztSklad(i);
+				createObjectiveKosztEV(i);
+				createObjectiveKosztHandel(i);
+				
+				cplex.addEq(koszt[i], cplex.sum(koszt_Zew[i],koszt_sklad[i],koszt_EV[i], koszt_handel[i]  ));
+				if (i==0)
+				{
+					objective =koszt[i];
+				}
+				else
+				{
+					objective =cplex.sum(objective,koszt[i]);
+				}
+				
+				i++;
+			}
+		} catch (IloException e) {
+			e.printStackTrace();
+		}
+	
+		return objective;				
+	}
+	
+	private void createObjectiveKosztZew(int t) throws IloException
+	{
+		IloNumExpr sum1 =Zew_EV[t];
+		IloNumExpr diff1 =cplex.sum(EB_c[t],G_c[t],EV_c[t],EM_c_Z[t]  );
+		IloNumExpr prawaStrona = cplex.diff(sum1,diff1);
+		
+		cplex.addEq(koszt_Zew[t],cplex.prod(Stale.cenaDystrybutoraZewnetrznego, prawaStrona ));
+	}
+	
+	private void createObjectiveKosztSklad(int t) throws IloException
+	{
+		IloNumExpr prawaStrona = cplex.sum(G_sklad[t],EV_EB[t],EM_s_Z[t]);
+		cplex.addEq(koszt_sklad[t],cplex.prod(Stale.kosztAmortyzacjiBaterii, prawaStrona ));
+
+	}
+	
+	private void createObjectiveKosztEV(int t) throws IloException
+	{
+		IloNumExpr prawaStrona =cplex.sum(Zew_EV[t],G_EV[t],EB_EV[t],EM_EV_Z[t]);
+		cplex.addEq(koszt_EV[t],cplex.prod(Stale.kosztAmortyzacjiAkumulatoraEV, prawaStrona ));
+	}
+	
+	private void createObjectiveKosztHandel(int t) throws IloException
+	{
+		//IloNumExpr sumEB=cplex.prod(binHandelKupuj[t],cplex.sum(EM_c[t],EM_s[t]  ));
+		IloNumExpr sumEB=cplex.sum(EM_c_Z[t],EM_s_Z[t]);
+		
+		//IloNumExpr sumEV=cplex.prod(binEVKupuj[t],EM_EV[t]);
+		IloNumExpr sumEV=EM_EV_Z[t];
+		
+		IloNumExpr sum1 = cplex.sum(sumEB,sumEV);
+		
+		
+		//IloNumExpr diffEB=cplex.prod(cplex.diff(1, binHandelKupuj[t]),cplex.sum(EB_s[t],G_s[t]  )  );
+		IloNumExpr diffEB = cplex.diff(cplex.sum(EB_s[t],G_s[t]), cplex.sum(EB_s_Z[t],G_s_Z[t]) );
+		
+		//IloNumExpr diffEV=cplex.prod(cplex.diff(1, binHandelKupuj[t]),EV_EM[t]  );
+		IloNumExpr diffEV=cplex.diff(EV_EM[t], EV_EM_Z[t]  );
+		
+		IloNumExpr diff1 =cplex.sum(diffEB,diffEV);
+		cplex.addEq(koszt_handel[t],cplex.prod(form.getPrices().get(t),cplex.diff(sum1, diff1)));
+	}	
+	
+	
+
+	//TODO
+	void setVariables(Form form24)
+	{
+		this.form = form24;
+		
+		double reallyBigNumber = Stale.reallyBigNumber; 
+		double pojemnoscBaterii = form24.getPojemnoscBaterii();
+		
+		//print("pojemnoscBaterii "+pojemnoscBaterii  );
+		
+		int horyzontCzasu=Stale.horyzontCzasowy;
+		double predkoscBaterii = form.getPredkoscBaterii();
+		
+		double minPredkosciEVEB =Math.min(Stale.predkoscAkumulatoraEV,predkoscBaterii);
+		
+		koszt = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,-reallyBigNumber,reallyBigNumber, cplex);
+		koszt_Zew = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,-reallyBigNumber,reallyBigNumber, cplex);
+		koszt_sklad = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,-reallyBigNumber,reallyBigNumber, cplex);
+		koszt_EV = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,-reallyBigNumber,reallyBigNumber, cplex);
+		koszt_handel= stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,-reallyBigNumber,reallyBigNumber, cplex);
+		
+		//gospodarstwo domowe (nie EV)
+		EB = stworzWektorZmiennychCiaglych(Stale.horyzontCzasowy,pojemnoscBaterii, cplex);
+		EB_c = stworzWektorZmiennychCiaglych(horyzontCzasu,predkoscBaterii, cplex);
+		G_c = stworzWektorZmiennychCiaglych(horyzontCzasu,reallyBigNumber, cplex);
+		G_sklad = stworzWektorZmiennychCiaglych(horyzontCzasu,predkoscBaterii, cplex); 
+		G_s  = stworzWektorZmiennychCiaglych(horyzontCzasu,reallyBigNumber, cplex);
+		EB_s = stworzWektorZmiennychCiaglych(horyzontCzasu,Stale.predkoscBaterii, cplex);
+		EM_c =stworzWektorZmiennychCiaglych(horyzontCzasu,reallyBigNumber, cplex);
+		EM_s =stworzWektorZmiennychCiaglych(horyzontCzasu,Stale.predkoscBaterii, cplex);
+
+		
+		//EV
+		
+		EV=stworzWektorZmiennychCiaglych(horyzontCzasu,Stale.pojemnoscAkumualtoraEV,cplex);
+		EV_c=stworzWektorZmiennychCiaglych(horyzontCzasu,Stale.predkoscAkumulatoraEV,cplex);;
+		
+		//predkosc baterii, a nie Stale.predkoscBaterii bo dla wirtualnego rposumenta ona jest rozna niz domyslna
+		EV_EB=stworzWektorZmiennychCiaglych(horyzontCzasu,minPredkosciEVEB,cplex);
+		EB_EV=stworzWektorZmiennychCiaglych(horyzontCzasu,minPredkosciEVEB,cplex);
+		G_EV=stworzWektorZmiennychCiaglych(horyzontCzasu,Stale.predkoscAkumulatoraEV,cplex);
+		Zew_EV=stworzWektorZmiennychCiaglych(horyzontCzasu,Stale.predkoscAkumulatoraEV,cplex);
+		EM_EV=stworzWektorZmiennychCiaglych(horyzontCzasu,Stale.predkoscAkumulatoraEV,cplex);
+		EV_EM =stworzWektorZmiennychCiaglych(horyzontCzasu,Stale.predkoscAkumulatoraEV,cplex);
+		
+		//binarki
+		binHandelKupuj= stworzWektorZmiennychBinarnych(horyzontCzasu, cplex);
+		binEVKupuj= stworzWektorZmiennychBinarnych(horyzontCzasu, cplex);
+		
+		//zmienne dodatkowe
+		EM_s_Z = stworzWektorZmiennychDodatkowych(horyzontCzasu, Stale.predkoscBaterii,binHandelKupuj,EM_s, cplex); 
+		EB_s_Z = stworzWektorZmiennychDodatkowych(horyzontCzasu, Stale.predkoscBaterii,binHandelKupuj,EB_s, cplex);; 
+		G_s_Z= stworzWektorZmiennychDodatkowych(horyzontCzasu, reallyBigNumber,binHandelKupuj,G_s, cplex);; 
+		EM_c_Z= stworzWektorZmiennychDodatkowych(horyzontCzasu, reallyBigNumber,binHandelKupuj,EM_c, cplex);
+		
+		EM_EV_Z= stworzWektorZmiennychDodatkowych(horyzontCzasu, Stale.predkoscAkumulatoraEV,binEVKupuj,EM_EV, cplex);
+		EV_EM_Z= stworzWektorZmiennychDodatkowych(horyzontCzasu, Stale.predkoscAkumulatoraEV,binEVKupuj,EV_EM, cplex);
+		
+		
+	}
+
+	
+}

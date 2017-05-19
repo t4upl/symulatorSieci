@@ -37,4 +37,18 @@ public class CoreClass {
 			i++;
 		}
 	}
+	
+	public Double[] primitiveDouble2Double(double[] d)
+	{
+		Double[] d2 = new Double[d.length];
+		
+		int i=0;
+		while (i<d.length)
+		{
+			d2[i] =d[i];
+			i++;
+		}
+		
+		return d2;
+	}
 }

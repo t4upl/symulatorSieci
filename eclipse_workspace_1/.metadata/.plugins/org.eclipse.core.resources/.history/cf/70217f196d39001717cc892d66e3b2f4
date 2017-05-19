@@ -1,0 +1,250 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+public class Loader extends CoreClass {
+
+	//Singleton shit
+	private static Loader instance = null;
+	private Loader() 
+	{
+	}
+	
+	public static Loader getInstance() {
+	      if(instance == null) {
+	         instance = new Loader();
+	      }
+	      return instance;
+	}
+	
+	DayData loadProsumentLine2DayData(String line)
+	{
+		DayData d = new DayData();
+		
+		String[] s2 = line.split(",");
+		String[] s3= s2[0].split(" ");
+		
+		d.setDay(s3[0]);
+		d.setHour(s3[1]);
+		d.setConsumption(Double.valueOf(s2[2]));
+		d.setGeneration(Double.valueOf(s2[1]));
+		
+		return d;
+	}
+	
+	public ArrayList<DayData> loadProsument(int IDprosumenta)
+	{
+		ArrayList<DayData> outputList = new ArrayList<>();
+		
+		String pathToData=Stale.folderZDanymi+"\\zuzycie\\"+(IDprosumenta+1)+".csv";
+		
+		int liczbaDodatkowychDni =3;
+		
+		
+		//czy wczytwyanie doszlo do glownego ciala pliku
+        Boolean isBody=false;
+        Boolean isEndDateReached=false;
+        
+        
+        BufferedReader br = null;
+        String line ="";
+        int dodatkoweIndeksy =liczbaDodatkowychDni*24;
+        
+        int i=0;
+
+        
+        try {
+ 			br = new BufferedReader(new FileReader(pathToData));
+ 	        while ((line = br.readLine()) != null)
+ 	        {
+ 	        	if (isBody)
+ 	        	{	
+ 	        		//print(line);
+ 	        		
+	        		DayData d = loadProsumentLine2DayData(line);
+	        		outputList.add(d);
+ 	        		
+ 	        		if (isEndDateReached)
+ 	        		{
+ 	        			i++;
+ 	        			if (i>dodatkoweIndeksy)
+ 	        			{
+ 	        				break;
+ 	        			}
+ 	        		}
+ 	        		else
+ 	        		{
+ 		        		String[] s2 = line.split(",");
+ 		        		String dayHour = s2[0];
+ 	        			
+ 	        			if (dayHour.equals(Stale.simulationEndDate))
+ 	        			{
+ 	        				isEndDateReached=true;
+ 	        			}
+ 	        		}
+ 	        	}
+ 	        	else
+ 	        	{
+ 		        	if (line.equals("###"))
+ 		        	{
+ 		        		isBody=true;
+ 		        	}
+ 	        	}
+ 	        }
+ 	        
+ 	        br.close();
+ 				
+ 		} catch (Exception e) {
+ 			print("createHoursList EXCEPTION");
+ 			e.printStackTrace();
+ 		}        
+		
+		
+		return outputList;
+
+	}
+	
+	public ArrayList<String> loadDayHourList()
+	{
+		ArrayList<String> outputList = new ArrayList<>();
+		
+		String pathToData=Stale.folderZDanymi+"\\zuzycie\\"+Stale.scenariusz+".csv";
+		
+		//dayt zostana wczytae do symualtion end date + liczba dnia
+		int liczbaDodatkowychDni =3;
+		
+		
+		//czy wczytwyanie doszlo do glownego ciala pliku
+        Boolean isBody=false;
+        Boolean isEndDateReached=false;
+        
+        
+        BufferedReader br = null;
+        String line ="";
+        int dodatkoweIndeksy =liczbaDodatkowychDni*24;
+        
+        int i=0;
+
+        
+        try {
+ 			br = new BufferedReader(new FileReader(pathToData));
+ 	        while ((line = br.readLine()) != null)
+ 	        {
+ 	        	if (isBody)
+ 	        	{	
+ 	        		//print(line);
+ 	        		
+	        		String[] s2 = line.split(",");
+	        		String dayHour = s2[0];
+	        		
+	        		outputList.add(dayHour);
+ 	        		
+ 	        		if (isEndDateReached)
+ 	        		{
+ 	        			i++;
+ 	        			if (i>dodatkoweIndeksy)
+ 	        			{
+ 	        				break;
+ 	        			}
+ 	        		}
+ 	        		else
+ 	        		{
+ 	        			if (dayHour.equals(Stale.simulationEndDate))
+ 	        			{
+ 	        				isEndDateReached=true;
+ 	        			}
+ 	        		}
+ 	        	}
+ 	        	else
+ 	        	{
+ 		        	if (line.equals("###"))
+ 		        	{
+ 		        		isBody=true;
+ 		        	}
+ 	        	}
+ 	        }
+ 	        
+ 	        br.close();
+ 				
+ 		} catch (Exception e) {
+ 			print("createHoursList EXCEPTION");
+ 			e.printStackTrace();
+ 		}        
+        
+
+		
+		print (pathToData);
+
+		
+		return outputList;
+	}
+	
+	//TODO
+	//wczytaj predykcje cen
+	public ArrayList<Double> loadPredykcjeCen()
+	{
+		String pathToData = Stale.folderZDanymi+"\\ceny\\pierwszeCeny_"+Stale.scenariusz+".csv";
+
+		ArrayList<Double> output = new ArrayList<>();
+		
+        BufferedReader br = null;
+        String line ="";
+        Boolean isBody =false;
+        
+        int i=0;
+        //index kolumeny pierwsze ceny
+        int indexOfPierwszeCeny=-1;
+        String columnName= "";
+        
+		
+       try {
+ 			br = new BufferedReader(new FileReader(pathToData));
+ 	        while ((line = br.readLine()) != null)
+ 	        {
+ 	        	if (isBody)
+ 	        	{	
+ 	        		if (i==0)
+ 	        		{
+ 	        			String header = line;
+ 	        			String[] s2 = header.split(",");
+ 	        			
+ 	        			ArrayList<String> list1 = new ArrayList<>( Arrays.asList(s2));
+ 	        			indexOfPierwszeCeny = list1.indexOf(columnName);
+ 	        			
+ 	        			//trap
+ 	        			if (indexOfPierwszeCeny==-1)
+ 	        			{
+ 	        				getInput("ERROR in loadPredykcjeCen");
+ 	        			}
+ 	        			
+ 	        		}else
+ 	        		{
+ 	        			String[] s2 = line.split(",");
+ 	        			output.add(Double.valueOf(s2[indexOfPierwszeCeny]));
+
+ 	        		} 	        		
+ 	        		
+ 	        		i++;
+ 	        	}
+ 	        	else
+ 	        	{
+ 		        	if (line.equals("###"))
+ 		        	{
+ 		        		isBody=true;
+ 		        	}
+ 	        	}
+ 	        }
+ 	        
+ 	        br.close();
+ 				
+ 		} catch (Exception e) {
+ 			print("loadPredykcjeCen EXCEPTION");
+ 			e.printStackTrace();
+ 		}        
+	
+		
+		return output;
+	}
+	
+}

@@ -21,9 +21,7 @@ public class Agregator extends CoreClass {
 	}
 	
 	public void run()
-	{
-		print("run must is still TODO");
-		
+	{	
 		//indexy prosumentow biorace udzial w agregacji
 		Integer[] indexArray = createArray(0,listaProsumentow.size() );			
 		createAgregateReport(100,indexArray,"all prosuments");
@@ -58,14 +56,14 @@ public class Agregator extends CoreClass {
 			
 			if (dodawanyProsument instanceof ProsumentEV)
 			{
-				getInput("createAgregateReportEV -uzupelnij");
-				//prosument2.addProsumentEV((ProsumentEV)dodawanyProsument,IDdodawanegoProsumenta );	
+				prosument2.addProsumentEV((ProsumentEV)dodawanyProsument );	
 			}	
 			i++;
 		}
 		
-		//TODO
-		//prosument2.performEndOfSimulationCalculations(false);
+		prosument2.obliczTotalCost();
+		prosument2.obliczRezerwe();
+				
 		reporter.createProsumentReport(prosument2);
 	}
 	

@@ -5,100 +5,128 @@ public class EVData {
 	int status=0;
 
 	//stan energii na poczatku slotu
-	float EV=0;
-	float EV_c=0; 
-	float EV_EB=0;
-	float EB_EV=0;
-	float G_EV=0;
-	float Zew_EV=0;
+	double EV=0;
+	double EV_c=0; 
+	double EV_EB=0;
+	double EB_EV=0;
+	double G_EV=0;
+	double Zew_EV=0;
 	
-	float EM_EV=0;
-	float EV_EM=0;
+	double EM_EV=0;
+	double EV_EM=0;
 	
 	//zmiennna binarna mowiaca czy EV kupuej czy sprzedaje
-	int EVbinKupuj=0;
+	double EVbinKupuj=0;
+	
+	double koszt_EV=0;
+
 	
 	//--------------------------------
 	//GETTERS SETTERS
+	
+	
 		
 	public int getStatus() {
 		return status;
 	}
 
-	public int getEVbinKupuj() {
+	public double getKoszt_EV() {
+		return koszt_EV;
+	}
+
+	public void setKoszt_EV(double koszt_EV) {
+		this.koszt_EV = koszt_EV;
+	}
+
+	public double getEVbinKupuj() {
 		return EVbinKupuj;
 	}
 
-	public void setEVbinKupuj(int eVbinKupuj) {
+	public void setEVbinKupuj(double eVbinKupuj) {
 		EVbinKupuj = eVbinKupuj;
 	}
 
-	public float getEM_EV() {
+	public double getEM_EV() {
 		return EM_EV;
 	}
 
-	public void setEM_EV(float eM_EV) {
+	public void setEM_EV(double eM_EV) {
 		EM_EV = eM_EV;
 	}
 
-	public float getEV_EM() {
+	public double getEV_EM() {
 		return EV_EM;
 	}
 
-	public void setEV_EM(float eV_EM) {
+	public void setEV_EM(double eV_EM) {
 		EV_EM = eV_EM;
 	}
 
-	public float getEV() {
+	public double getEV() {
 		return EV;
 	}
 
-	public void setEV(float eV) {
+	public void setEV(double eV) {
 		EV = eV;
 	}
 
-	public float getEV_c() {
+	public double getEV_c() {
 		return EV_c;
 	}
 
-	public void setEV_c(float eV_c) {
+	public void setEV_c(double eV_c) {
 		EV_c = eV_c;
 	}
 
-	public float getEV_EB() {
+	public double getEV_EB() {
 		return EV_EB;
 	}
 
-	public void setEV_EB(float eV_EB) {
+	public void setEV_EB(double eV_EB) {
 		EV_EB = eV_EB;
 	}
 
-	public float getEB_EV() {
+	public double getEB_EV() {
 		return EB_EV;
 	}
 
-	public void setEB_EV(float eB_EV) {
+	public void setEB_EV(double eB_EV) {
 		EB_EV = eB_EV;
 	}
 
-	public float getG_EV() {
+	public double getG_EV() {
 		return G_EV;
 	}
 
-	public void setG_EV(float g_EV) {
+	public void setG_EV(double g_EV) {
 		G_EV = g_EV;
 	}
 
-	public float getZew_EV() {
+	public double getZew_EV() {
 		return Zew_EV;
 	}
 
-	public void setZew_EV(float zew_EV) {
+	public void setZew_EV(double zew_EV) {
 		Zew_EV = zew_EV;
 	}
 
 	public void setStatus(int status) {
 		this.status = status;
+	}
+	
+	public void addEVData(EVData eVData)
+	{
+		EV+=eVData.getEV();
+		EV_c+=eVData.getEV_c();
+		EV_EB+=eVData.getEV_EB();
+		
+		EB_EV+=eVData.getEB_EV();
+		G_EV+=eVData.getG_EV();
+		Zew_EV+=eVData.getZew_EV();
+		EM_EV+=eVData.getEM_EV();
+		EV_EM+=eVData.getEV_EM();
+		koszt_EV+=eVData.getKoszt_EV();
+
 	}
 		
 	

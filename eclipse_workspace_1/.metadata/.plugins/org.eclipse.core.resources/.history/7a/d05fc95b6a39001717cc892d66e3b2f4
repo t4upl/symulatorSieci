@@ -1,0 +1,566 @@
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+
+public class Rynek extends CoreClass {
+
+	//liczba okreslajaca ktora wymian miedzy rposuemntami a rynkiem zachodzi
+	int iteracja;
+	
+	
+	//lista list punktow przekazana przez prosumentow
+	private ArrayList<ArrayList<Point>> listaFunkcjiUzytecznosci;
+	
+	//lista cen (na najblizszy slot)
+	ArrayList<Double> priceVector;
+	
+	//lista cen jakie byly przedstawiane na najblizsyz slot (w koeljnosci oglaszania)\
+	//potrzeben bo na podstawie tego sprawdznay jest warunek early entry - proba ogloszenia cney juz rozglaszanej
+	ArrayList<Double> cenyNaNajbliszySlot;
+	
+	
+	//predykcje cen wczytane z pliku (inicjalizacja przy Rynek.getInstance())
+	ArrayList<Double> wczytanaListaPredykcji;
+	
+	
+	
+	
+	//Singletony
+	RynekHistory rynekHistory =RynekHistory.getInstance();
+	ListaProsumentowWrap listaProsumentowWrap = ListaProsumentowWrap.getInstance();
+	RynekPriceModule rynekPriceModule = RynekPriceModule.getInstance();
+	Loader loader = Loader.getInstance();
+
+	
+	
+	//Singleton shit
+	private static Rynek instance = null;
+	private Rynek() 
+	{
+	}
+	
+   public static Rynek getInstance() {
+	      if(instance == null) {
+	         instance = new Rynek();
+	         
+	         //wcyztaj dane z listy cen jezeli wybrales opcje ze nei chcesz cen z generatora
+	         instance.inicjalizujRynek();
+	         
+	      }
+	      return instance;
+	}
+   
+   //wczytuje dane z pliku (jezeli tak jest w stalych)
+   public void inicjalizujRynek()
+   {
+	   //getInput("inicjalizujRynek");
+		if (!Stale.isCenyZGeneratora)
+		{			
+			wczytanaListaPredykcji =loader.loadPredykcjeCen();
+		}
+	   
+	   
+   }
+   
+   //zwraca lsite posortowanych cen jakie byly oglaszane wsrod prosumentow
+   ArrayList<Double> wezPosortowaneCeny()
+   {
+	   ArrayList<Double> output = new ArrayList<>(priceVector);
+	   Collections.sort(output);
+	   return output;
+	   
+   }
+   
+   public void endOfSimulation()
+   {
+	  //getInput("endOfSimulation -remains to be done");
+	  rynekHistory.createReportHistoriaCen();
+   }
+   
+   //	zwraca ile kont nalezy utworzyc
+   //dla scenariusz bez EV = 16 (jedno na prosuemnta)
+ 	//dla scenraiusz z EV =20 (16+ 4 -dla kazdego EV)
+ 	int obliczLiczbaKont()
+ 	{
+ 		ListaProsumentowWrap listaProsumentowWrap= ListaProsumentowWrap.getInstance();
+ 		ArrayList<Prosument> listaProsumentow = listaProsumentowWrap.getListaProsumentow();
+ 		
+ 		int sum=0;
+ 		
+ 		int i=0;
+ 		while (i<listaProsumentow.size())
+ 		{
+ 			Prosument prosument = listaProsumentow.get(i);
+ 			
+ 			if (prosument instanceof ProsumentEV)
+ 			{
+ 				sum+=2;
+ 			}
+ 			else
+ 			{
+ 				sum++;
+ 			}
+ 			
+ 			i++;
+ 		}
+ 		
+ 		return sum;
+ 	}
+   
+	//Odpalanae na poczatku kazdego simulationStepu
+	public void reset()
+	{		
+		iteracja =0;
+		
+		listaFunkcjiUzytecznosci = new ArrayList<ArrayList<Point>>();
+		cenyNaNajbliszySlot = new ArrayList<>();
+		
+
+		//dla scenariuszy nie psoiadajacych EV 
+		int liczbaHandlowcow=obliczLiczbaKont();
+	
+		int a=0;
+		while (a<liczbaHandlowcow)
+		{
+			listaFunkcjiUzytecznosci.add(new ArrayList<Point>());
+			a++;
+		}
+		
+		priceVector = new ArrayList<>();
+		
+		rynekHistory.reset(liczbaHandlowcow);
+		
+	}
+	
+
+   
+	
+ 	//pierwsza predykcja - poczatek procesu handlu
+	//ROZDZIAL!!! NA CENY Z GENERATORA i Z PLIKU SIEDZI WEWNATRZ funkcji pierwszaPredykcja();
+ 	public ArrayList<ArrayList<Double>> predykcjaPierwszychCenNaRynkuLokalnym()
+ 	{
+ 		
+ 		float cenaMinimalnaNaRynkuLokalnym= Stale.cenaMinimalnaNaRynkuLokalnym;
+ 		float cenaMaksymalnaNaRynkuLokalnym = Stale.cenaDystrybutoraZewnetrznego;
+ 		
+ 		//tu siedzi to rozroznienie czy z generatora czy predykcja z poprzendiej symualcji
+ 		ArrayList<Double> normalnaPredykcja = pierwszaPredykcja();
+ 		
+		rynekHistory.historiaCenPierwszeCeny.add(normalnaPredykcja.get(0));
+
+ 		
+ 		priceVector =normalnaPredykcja;
+ 		
+ 		//output
+ 		ArrayList<ArrayList<Double>> listaPredykcjiCen= new ArrayList<>();
+ 		
+ 		
+ 		//nizsza 
+ 		ArrayList<Double> predykcjaZNizszaCena=new ArrayList<>(normalnaPredykcja);		
+ 		ArrayList<Double> predykcjaZWyzszaCena=new ArrayList<>(normalnaPredykcja);
+ 		
+ 		Double nizszaCena =(normalnaPredykcja.get(0)+cenaMinimalnaNaRynkuLokalnym)/2 ;
+ 		Double wyzszaCena=(normalnaPredykcja.get(0)+cenaMaksymalnaNaRynkuLokalnym)/2;
+ 		
+ 		rynekPriceModule.setLeftBound(nizszaCena);
+ 		rynekPriceModule.setRightBound(wyzszaCena);
+ 		
+ 		predykcjaZNizszaCena.set(0, nizszaCena);
+ 		predykcjaZWyzszaCena.set(0, wyzszaCena);
+ 		
+ 		listaPredykcjiCen.add(predykcjaZNizszaCena);
+ 		listaPredykcjiCen.add(normalnaPredykcja);
+ 		listaPredykcjiCen.add(predykcjaZWyzszaCena);
+ 		
+ 		//reporting - zapisz zadeklarowan cene
+ 		//rynekHistory.dodajZadeklarowanaCene(normalnaPredykcja.get(0));
+ 		
+ 		cenyNaNajbliszySlot.add(predykcjaZNizszaCena.get(0));
+ 		cenyNaNajbliszySlot.add(normalnaPredykcja.get(0));
+ 		cenyNaNajbliszySlot.add(predykcjaZWyzszaCena.get(0));
+ 		
+ 		
+ 		//dodaj cene do historii rozglaszanych cen
+ 		rynekHistory.historiaCen.add(predykcjaZNizszaCena.get(0));
+ 		rynekHistory.historiaCen.add(normalnaPredykcja.get(0));
+ 		rynekHistory.historiaCen.add(predykcjaZWyzszaCena.get(0));
+
+ 		
+ 		
+ 		return listaPredykcjiCen;	
+ 	}
+ 	
+ 	
+ 	//opakowanie just in case chcialbys robic predykcje ze scenariuszem testowym
+	//zwraca wektor predykcji peirwszych cen
+ 	//wiemk "just in case" to nie najlepsza metodyka projektowa, ale i tak pewnie bedizes zchcial to sprawdzic
+	ArrayList<Double> pierwszaPredykcja()
+	{
+		return pierwszaPredykcjaNormalScenario();
+	}
+ 	
+ 	
+	
+	ArrayList<Double> pierwszaPredykcjaNormalScenarioWezZlisty()
+	{
+		ArrayList<Double> output = new ArrayList<>();
+		
+		int i=0;
+		while (i<Stale.horyzontCzasowy)
+		{
+			
+			i++;
+		}
+		
+		return output;
+	}
+ 	
+	//Normal scenario = nie testowy
+ 	ArrayList<Double> pierwszaPredykcjaNormalScenario()
+	{
+		//podja predykcje cen z generatora
+		if (Stale.isCenyZGeneratora)
+		{
+			ArrayList<Double> listaSumarycznejGeneracji = listaProsumentowWrap.getListaSumarycznejGeneracji(LokalneCentrum.getTimeIndex());
+			ArrayList<Double> listaSumarycznejKonsumpcji = listaProsumentowWrap.getListaSumarycznejKonsumpcji(LokalneCentrum.getTimeIndex());
+
+			return predictPrice(listaSumarycznejGeneracji,listaSumarycznejKonsumpcji);
+		}
+		else
+		{
+			
+			getInput("pierwszaPredykcjaNormal - this p[art still need to be filled out");
+						
+			ArrayList<Double> proposedPriceVector = pierwszaPredykcjaNormalScenarioWezZlisty();
+			
+			/*
+			//jezeli brakuje elementow w plikyu do pelnej predykcji an horyzont czasowy to uuzplenij dnaymi z modelu
+			if (proposedPriceVector.size()<Stale.horyzontCzasowy)
+			{
+				ArrayList<Float> listaSumarycznejGeneracji = listaProsumentowWrap.getListaSumarycznejGeneracji(LokalneCentrum.getTimeIndex());
+				ArrayList<Float> listaSumarycznejKonsumpcji = listaProsumentowWrap.getListaSumarycznejKonsumpcji(LokalneCentrum.getTimeIndex());
+				ArrayList<Float> cenyZmodelu =predictPrice(listaSumarycznejGeneracji,listaSumarycznejKonsumpcji);
+				
+				proposedPriceVector = polaczListy(proposedPriceVector, cenyZmodelu);
+				
+				if (proposedPriceVector.size()!=Stale.horyzontCzasowy)
+				{
+					getInput("ERROR in pierwszaPredykcjaNormal");
+				}
+			}*/
+			
+			return proposedPriceVector;
+		}
+	}
+ 	
+	ArrayList<Double> predictPrice(ArrayList<Double> listaSumarycznejGeneracji, ArrayList<Double> listaSumarycznejKonsumpcji) 
+	{
+		Double expislon = 0.01;
+		
+		ArrayList<Double> L1 =new ArrayList<> ();
+		int a=0;
+		while (a<listaSumarycznejGeneracji.size())
+		{
+			Double wartoscDoDodania=expislon;
+			if (listaSumarycznejKonsumpcji.get(a)>0)
+			{
+				wartoscDoDodania=(listaSumarycznejKonsumpcji.get(a)-listaSumarycznejGeneracji.get(a))/listaSumarycznejKonsumpcji.get(a);
+				wartoscDoDodania=wartoscDoDodania*Stale.cenaDystrybutoraZewnetrznego;
+			}
+			 
+			wartoscDoDodania=Math.max(wartoscDoDodania,expislon);
+			wartoscDoDodania=Math.min(wartoscDoDodania,Stale.cenaDystrybutoraZewnetrznego-expislon);
+			
+			L1.add(wartoscDoDodania);
+				
+			a++;
+		}
+		
+		return L1;
+	} 
+	
+	
+	//see addPricePoint to understand the use
+	void addPricePointAndListNotEmpty(Prosument prosument, Point point, ArrayList<Point> pointList)
+	{
+		//getInput("addPricePointAndListNotEmpty -start");
+		Boolean priceAlreadyInList = checkIfPriceExist(pointList,point.getPrice());
+		
+		//if price not in the list
+		if (!priceAlreadyInList)
+		{
+			//says if found index that point.price < point(index).price
+			//if not found add point as last in the list
+			Boolean notFound = true; 
+			
+			int a=0;
+			while (a<pointList.size() && notFound)
+			{
+				if (point.getPrice()<pointList.get(a).getPrice())
+				{
+					//jezeli a>0 to przestaw alfe i bete poprzednikowi dodawanego punktu
+					if (a>0)
+					{
+						//updateAlfa(,point,prosument,pointList,"poprzednik dodawanego punktu");
+						pointList.get(a-1).updateAlfa(point);
+					}
+					
+					//ustaw alfe i bete dodawanego punktu
+					//updateAlfa(point,pointList.get(a),prosument,pointList,"dodawany punkt");
+					point.updateAlfa(pointList.get(a));
+					
+					pointList.add(a, point);
+					notFound=false;	
+				}	
+				a++;
+			}
+			
+			if (notFound)
+			{
+				//zupdatuj przed ostatniego (bo sotatni to ten ktoreog wlasnie dodajesz)
+				//updateAlfa(pointList.get(pointList.size()-1),point,prosument, pointList,"not found");
+				pointList.get(pointList.size()-1).updateAlfa(point);
+				
+				//zrob tak zeby nowo dodawany punkt na koncu listy mial prosta wspolna z przed ostatnim punktem (dotychczas ostatnim)
+				point.updateAlfa(pointList.get(pointList.size()-1));
+				
+				pointList.add(point);
+			}
+		}
+		
+		//getInput("addPricePointAndListNotEmpty -end");
+
+		
+	}
+	
+	//this checks if price that prosuemnt wants to add is already on list (if it is adding shoudl be ignored)
+	Boolean checkIfPriceExist(ArrayList<Point> pointList ,double  price)
+	{
+		int a=0;
+		while(a<pointList.size())
+		{
+			if (price==pointList.get(a).getPrice())
+			{
+				return true;
+			}
+			a++;
+		}
+		return false;
+	}
+	
+	//point jaki chce dodac prosument
+	public void addPricePoint(Prosument prosument, Point point)
+	{
+		//kiedys bylo tlumaczenie z ID prosumenta na ID listy, teraz jes tto outdated
+		int idListy = prosument.getID();
+		ArrayList<Point> pointList = listaFunkcjiUzytecznosci.get(idListy);		
+		
+		if (pointList.size()==0)
+		{
+			pointList.add(point);
+		}
+		else
+		{
+			addPricePointAndListNotEmpty(prosument, point, pointList);
+		}
+		
+		//getInput("addPricePoint stop");
+		
+		//rynekHistory.addPointToHistoryFunkcjaUzytecznosci(idListy, listaFunkcjiUzytecznosci);
+		
+	}
+	
+
+
+	//TODO wyznacz cene
+	public void wyznaczCeneAndBroadcast()
+	{
+
+		//print("wyznaczCeneAndBroadcast iteracja:"+iteracja);
+		
+		if (iteracja<Stale.limitIteracji)
+		{	
+			double cena =rynekPriceModule.wyznaczCeneNaRynkuLokalnym(listaFunkcjiUzytecznosci);
+			ustawPierwszyElementWWekotrzeCen(cena);						
+			
+			//sprawdz czy cena byla zu wysylana do prosumentow
+			//jezlei tak to przeprowadz iteracje, jezeli nie to zkaoncz proces handlu
+			if (cenyNaNajbliszySlot.indexOf(cena)==-1 )
+			{
+				cenyNaNajbliszySlot.add(cena);
+				
+				//to musi byc tu a nie nizej - inaczej bedzie endless loop na if (iteracja <)
+				iteracja++;
+
+				BroadcastCenaAmongProsuments(priceVector);
+			}
+			else
+			{
+				koniecHandlu();
+			}
+		}
+		else
+		{	
+			koniecHandlu();
+		}
+	}
+	
+	//koneic handlu -rozpisanie kontraktu + akcje na koniec handlu (reporting)
+	void koniecHandlu()
+	{
+		rozpiszKontrakty();
+	}
+	
+	//opakowanie do ustawania ceny w priceVector
+	//potrzebne bo pewnie bedizes zchcial strzleac dnaymi hisotrycnzymi do RynekHistory
+	void ustawPierwszyElementWWekotrzeCen (double cena)
+	{
+		priceVector.set(0, cena);
+		rynekHistory.historiaCen.add(cena);
+	}
+	
+	
+	//TODO
+	public void rozpiszKontrakty()
+	{
+		
+		//zwraca ile energii kupil i-ty prosument w wyniku handlu
+		//wartsc ujemna oznacza sprzedaz
+		RynekPriceModule.Kontrakt kontrakty = rynekPriceModule.rozpiszKontrakty(listaFunkcjiUzytecznosci);
+		ustawPierwszyElementWWekotrzeCen(kontrakty.cenaFinalna);
+		
+
+		
+		ArrayList<DayData> kontraktyDlaKont = rozpakujKontrakty (kontrakty);
+				
+		rozpuscKontraktyWsrodProsumentow(kontraktyDlaKont);
+		
+		//hisotria cen
+		rynekHistory.historiaCenFinalneCeny.add(kontrakty.cenaFinalna);
+		rynekHistory.historiaCenWolumenHandlu.add(kontrakty.wolumenHandlu);
+		
+		//raport handlu z funkcjami uzytecznosci
+		rynekHistory.wolumenHandlu =kontrakty.wolumenHandlu;
+		rynekHistory.sumaKupna =kontrakty.SumaKupna;
+		rynekHistory.sumaSprzedazy=kontrakty.SumaSprzedazy;
+		rynekHistory.ListaFunkcjiUzytecznosciNaKoniecHandlu = listaFunkcjiUzytecznosci;
+		
+		rynekHistory.cenaFinalna = kontrakty.cenaFinalna;
+		
+		zrobRaportyPoKrokuHandlu();
+		
+		
+		//getInput("rozpisz kontakty end");
+	}
+	
+	void zrobRaportyPoKrokuHandlu()
+	{
+		rynekHistory.createReportHandelZFunkcjamiPopytu();
+	}
+	
+	void rozpuscKontraktyWsrodProsumentow(ArrayList<DayData> kontraktyDlaKont)
+	{
+		ArrayList<Prosument> listaProsumentow =listaProsumentowWrap.getListaProsumentow();
+		
+		int i=0;
+		while (i<Stale.liczbaProsumentow)
+		{
+			if (Stale.isScenariuszEV)
+			{
+				getInput("rozpuscKontraktyWsrodProsumentow need sto be filled out");
+			}else
+			{
+				listaProsumentow.get(i).getKontrakt(priceVector,kontraktyDlaKont.get(i));
+				
+			}
+			
+			i++;
+		}
+	}
+	
+	ArrayList<DayData> rozpakujKontrakty (RynekPriceModule.Kontrakt kontrakty)
+	{
+		ArrayList<DayData> output = new ArrayList<>();
+		
+		ArrayList<Double> listaPrzydzialowEnergii =kontrakty.listaPrzydzialowEnergii;
+		
+		int i=0;
+		while (i<listaFunkcjiUzytecznosci.size())
+		{
+			DayData d =null;
+			
+			if (i<Stale.liczbaProsumentow)
+			{
+				d = rozpakujKontraktyDayDataProsumenta(listaPrzydzialowEnergii.get(i));
+			}else
+			{
+				d = rozpakujKontraktyDayDataEV(listaPrzydzialowEnergii.get(i));
+			}
+			
+			output.add(d);
+			
+			i++;
+		}
+		
+		return output;
+		
+	}
+	
+	//ilosc z energii moze byc ujemna (sprzedaz)
+	DayData rozpakujKontraktyDayDataEV(double iloscEnergiiZHandlu)
+	{
+		DayData d =new DayData();
+		
+		getInput("rozpakujKontraktyDayDataEV needs feeling out");
+		
+		return d;
+	}
+	
+	//ilosc z energii moze byc ujemna (sprzedaz)
+	DayData rozpakujKontraktyDayDataProsumenta(double iloscEnergiiZHandlu)
+	{
+		DayData constrainMarker =new DayData();
+		
+		if (iloscEnergiiZHandlu>0)
+		{
+			constrainMarker.setKupuj(1);
+			constrainMarker.setGeneration(iloscEnergiiZHandlu);
+		}
+		else
+		{
+			constrainMarker.setKupuj(0);
+			constrainMarker.setConsumption(-iloscEnergiiZHandlu);
+		}
+		
+		return constrainMarker;
+	}
+	
+	
+	void BroadcastCenaAmongProsuments(ArrayList<Double> priceVector)
+	{
+		//getInput("BroadcastCenaAmongProsuments");
+		ArrayList<Prosument> L1 =listaProsumentowWrap.getListaProsumentow(); 
+		
+		int a=0;
+		while (a<L1.size())
+		{
+			//wyznacz i dodaj punkt do funckji podazy
+			L1.get(a).takePriceVector(priceVector);
+			a++;
+		}
+		
+		
+		rynekHistory.addHistoryListaFunkcjiUzytecznosci(listaFunkcjiUzytecznosci);
+		
+		this.wyznaczCeneAndBroadcast();
+	}	
+	
+	
+	
+	
+
+	
+	
+
+ 	
+}

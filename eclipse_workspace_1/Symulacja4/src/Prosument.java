@@ -19,6 +19,8 @@ public class Prosument extends CoreClass {
 	
 	//Singletony
 	Loader loader = Loader.getInstance();
+	Rynek rynek = Rynek.getInstance();
+	OptimizerEV optimizerEV = OptimizerEV.getInstance();
 	
 	//KOSZTY
 	
@@ -85,6 +87,7 @@ public class Prosument extends CoreClass {
 	
 	//--------------
 	
+	//wywolywane przez ListaProsumentowWrap przy tworzneniu prosuemntow
 	public void loadData()
 	{
 		dayDataList =loader.loadProsument(ID);
@@ -215,7 +218,110 @@ public class Prosument extends CoreClass {
 	
 	public void performEndOfSimulationCalculations()
 	{
-		print("performEndOfSimulationCalculations remians to be done");
+		
+		if (LokalneCentrum.getIsHandelWSieci())
+		{
+			performEndOfSimulationCalculationsHandelWSieci();
+			//getInput("performEndOfSimulationCalculations remians to be done");
+		}
+		else
+		{
+			performEndOfSimulationCalculationsBrakHandluWSieci();
+		}
+		
+		obliczTotalCost();
+		obliczRezerwe();
+	}
+	
+	void performEndOfSimulationCalculationsHandelWSieci()
+	{
+		if (active)
+		{
+			performEndOfSimulationCalculationsHandelWSieciActive();
+		}
+		else
+		{
+			performEndOfSimulationCalculationsHandelWSieciPassive();
+		}
+	}
+	
+	//wolanne tez z agregatora
+	public void obliczRezerwe()
+	{		
+		double stanBateriiNakoniecSymulacji =dayDataList.get(LokalneCentrum.getSimulationEndDateIndex()).getStanBateriiNaPoczatkuSlotu();
+				
+		reserveBonus = 0;
+		reserveBonus +=stanBateriiNakoniecSymulacji*Stale.kosztAmortyzacjiBaterii;
+		
+		totalCost= costNoReserve -reserveBonus;
+		
+		
+	}
+	
+	
+	//wolane tez z agregatora
+	public void obliczTotalCost()
+	{
+		totalCost=0;
+		costNoReserve=0;
+		
+		int i=0;
+		while (i<LokalneCentrum.getSimulationEndDateIndex())
+		{
+			totalCost+=dayDataList.get(i).getCost();
+			i++;
+		}
+		
+		costNoReserve=totalCost;
+	}
+	
+	void performEndOfSimulationCalculationsHandelWSieciActive()
+	{
+		int i=0;
+		while (i<LokalneCentrum.getSimulationEndDateIndex())
+		{
+			DayData d = dayDataList.get(i);
+			d.setCost(d.getKoszt_opt()+d.getConsumption()*Stale.cenaDystrybutoraZewnetrznego);
+			i++;
+		}
+	}
+	
+	void performEndOfSimulationCalculationsHandelWSieciPassive()
+	{
+		int i=0;
+		while (i<LokalneCentrum.getSimulationEndDateIndex())
+		{
+			DayData d = dayDataList.get(i);
+			
+			d.setKoszt_handel(d.getZRynekNaKonsumpcje()*d.getCenaNaLokalnymRynku());
+			
+			double nieZrownowazonaKonsumpcja = d.getConsumption() - d.getZRynekNaKonsumpcje();
+			
+			d.setKoszt_Zew(nieZrownowazonaKonsumpcja*Stale.cenaDystrybutoraZewnetrznego);
+			
+			d.setCost(d.getKoszt_handel()+d.getKoszt_Zew());
+			
+			i++;
+		}
+	}
+	
+	void performEndOfSimulationCalculationsBrakHandluWSieci()
+	{
+		int i=0;
+		while (i<LokalneCentrum.getSimulationEndDateIndex())
+		{
+			DayData d = dayDataList.get(i);
+			
+			double niezrownowazonakonsumpcja = d.getConsumption()-d.getZGeneracjiNaKonsumpcje()-d.getZBateriiNaKonsumpcje();
+			d.setKoszt_Zew(niezrownowazonakonsumpcja*Stale.cenaDystrybutoraZewnetrznego);
+			
+			d.setKoszt_sklad(d.getZGeneracjiDoBaterii()*Stale.kosztAmortyzacjiBaterii);
+			
+			d.setCost(d.getKoszt_Zew()+d.getKoszt_sklad());
+			
+			
+			i++;
+		}
 	}
 
 	public ArrayList getDayDataList() {
@@ -255,34 +361,282 @@ public class Prosument extends CoreClass {
 	}
 	
 	public void zaktualizujHandelBrakHandlu()
-	{
-		
-		getInput("zaktualizujHandelBrakHandlu - fill this out");
-		
-		/*
+	{			
 		DayData dayData2 = dayDataList.get(LokalneCentrum.getTimeIndex());
 		
-		float generation = dayData2.getTrueGeneration();
-		float consumption = dayData2.getConsumption();
+		double generation = dayData2.getTrueGeneration();
+		double consumption = dayData2.getConsumption();
 		
 		if (generation>consumption)
 		{
 			
-			float generacjaDoBaterii = generation-dayData2.getConsumption();
+			double generacjaDoBaterii = generation-dayData2.getConsumption();
 			
 			dayData2.setZGeneracjiNaKonsumpcje(dayData2.getConsumption());
-			dayData2.chargeBatteryZGeneracji(generacjaDoBaterii,predkoscBaterii,pojemnoscBaterii);
-			
+			zaktualizujHandelBrakHandluChargeBattery(generacjaDoBaterii,dayData2);
 		}
 		else
 		{
 			dayData2.setZGeneracjiNaKonsumpcje(generation);
-			float nieZaspokojonaKonsumpcja = dayData2.getConsumption()-generation;
-			dayData2.dischargeBatteryNaKonsumpcje(nieZaspokojonaKonsumpcja,predkoscBaterii);
+			double nieZaspokojonaKonsumpcja = consumption-generation;
+			zaktualizujHandelBrakHandluDischargeBattery(nieZaspokojonaKonsumpcja,dayData2);
 		}
 		
-		dayData2.obliczStanBateriiNaKoniecSlotu();*/
+		DayData dayDataWKolejnymSlocie = dayDataList.get(LokalneCentrum.getTimeIndex()+1);
+
+		
+		zaktualizujHandelBrakHandluUstalStanBateriiWKolejnymSlocie(dayData2,dayDataWKolejnymSlocie );
+		
 	}
+	
+	
+	void zaktualizujHandelBrakHandluUstalStanBateriiWKolejnymSlocie(DayData dayData2 ,DayData dayDataWKolejnymSlocie)
+	{
+		double wartoscBaterii =dayData2.getStanBateriiNaPoczatkuSlotu()+dayData2.getZGeneracjiDoBaterii()-dayData2.getZBateriiNaKonsumpcje();
+		
+		dayDataWKolejnymSlocie.setStanBateriiNaPoczatkuSlotu(wartoscBaterii);
+		
+	}
+	
+	//value -wartsoc jaka chcialby doladowac prosument
+	void zaktualizujHandelBrakHandluChargeBattery(double value,DayData d)
+	{
+		value =Math.min(value, predkoscBaterii);
+		
+		//ilosc energii jaka jest w baterii
+		double capacityLeft = pojemnoscBaterii -d.getStanBateriiNaPoczatkuSlotu();
+		
+		value = Math.min(value, capacityLeft);
+		d.setZGeneracjiDoBaterii(value);
+	}
+	
+	//value -wartsoc jaka chcialby rozladoladowac prosument
+	void zaktualizujHandelBrakHandluDischargeBattery(double value,DayData d)
+	{
+		value =Math.max(value, 0);
+		value =Math.min(value, predkoscBaterii);
+		value = Math.min(value,d.getStanBateriiNaPoczatkuSlotu());
+		d.setZBateriiNaKonsumpcje(value);
+	}
+	
+	//TODO
+	//price vector ma postac (0) -mniejsza cena dla najblizszego slotu, (1) -normlana, (2) -wieksza
+	public void takeFirstPriceVector(ArrayList<ArrayList<Double>> ListOfPriceVectors)
+	{	
+		Point p1 = null;
+		Point p2 = null;
+		Point p3 = null;
+		
+		ArrayList<Double> priceVector = ListOfPriceVectors.get(1);
+		ArrayList<Double> priceVectorSmallerMod= ListOfPriceVectors.get(0);
+		ArrayList<Double> priceVectorBiggerMod= ListOfPriceVectors.get(2);
+		
+		
+		//wyznacz steorwanie gdy prosument jest aktywny lub scneariusz testowy
+		if (active)
+		{						
+			OptimizerEV.Sterowanie sterowanieForPriceVector =wyznaczSterowanieDlaAktywnegoProsumenta(priceVector);			
+			OptimizerEV.Sterowanie sterowanieForpriceVectorSmallerMod =wyznaczSterowanieDlaAktywnegoProsumenta(priceVectorSmallerMod);
+			OptimizerEV.Sterowanie sterowanieForPriceVectorBiggerMod =wyznaczSterowanieDlaAktywnegoProsumenta(priceVectorBiggerMod);
+						
+			p1 = getPunktFunkcjiUzytecznosci(sterowanieForPriceVector,priceVector);
+			p2 = getPunktFunkcjiUzytecznosci(sterowanieForpriceVectorSmallerMod,priceVectorSmallerMod);
+			p3 = getPunktFunkcjiUzytecznosci(sterowanieForPriceVectorBiggerMod,priceVectorBiggerMod);
+			
+		}
+		else
+		{
+			p1 = getPunktFunkcjiUzytecznosciDlaPasywnegoProsumenta(priceVector);
+			p2 = getPunktFunkcjiUzytecznosciDlaPasywnegoProsumenta(priceVectorSmallerMod);
+			p3 = getPunktFunkcjiUzytecznosciDlaPasywnegoProsumenta(priceVectorBiggerMod);
+		}
+		
+		
+		rynek.addPricePoint(this,p1);
+		rynek.addPricePoint(this,p2);
+		rynek.addPricePoint(this,p3);
+		
+	}
+	
+	Point getPunktFunkcjiUzytecznosciDlaPasywnegoProsumenta(ArrayList<Double> priceVector)
+	{
+		Point point = new Point();
+		point.setPrice(priceVector.get(0));	
+		
+		DayData d =dayDataList.get(LokalneCentrum.getTimeIndex());
+		
+		double wolumenEnergii=d.getConsumption();
+		point.setIloscEnergiiDoKupienia(wolumenEnergii);
+		return point;
+	}
+	
+	//przerabia sterowanie i wektor cen na punkt uzytecznosci
+	Point getPunktFunkcjiUzytecznosci(OptimizerEV.Sterowanie sterowanie, ArrayList<Double> priceVector)
+	{
+		Point point = new Point();
+		
+		point.setPrice(priceVector.get(0));	
+		//uncommented for debug
+		DayData d =sterowanie.getDList().get(0);
+		
+		double sprzedaz = d.getZBateriiNaRynek()+d.getZGeneracjiNaRynek();
+		double kupno = d.getZRynekDoBaterii()+d.getZRynekNaKonsumpcje();
+		
+		//to co zostanie wpiusane do point (chec kupna, moze byc ujemna)
+		double wolumenEnergii;
+		
+		//0.5, bo blad w reprezentacji double'a
+		if (d.getKupuj()>0.5)
+		{
+			wolumenEnergii=kupno;
+		}
+		else
+		{
+			wolumenEnergii=-sprzedaz;
+
+		}
+		point.setIloscEnergiiDoKupienia(wolumenEnergii);
+		
+		return point;
+	}		
+	
+	
+	
+	
+	OptimizerEV.Sterowanie wyznaczSterowanieDlaAktywnegoProsumenta (ArrayList<Double> priceVector)
+	{
+		OptimizerEV.Sterowanie sterowanie = new OptimizerEV.Sterowanie();
+		OptimizerEV.Form form =createForm24(priceVector);
+		sterowanie =optimizerEV.wyznaczSterowanie(form);
+				
+		return sterowanie;
+	}
+	
+	private OptimizerEV.Sterowanie wyznaczSterowanieDlaAktywnegoProsumenta (ArrayList<Double> priceVector, DayData constainMarker)
+	{
+		OptimizerEV.Sterowanie sterowanie = new OptimizerEV.Sterowanie();
+		OptimizerEV.Form form =createForm24(priceVector, constainMarker);
+		sterowanie =optimizerEV.wyznaczSterowanie(form);
+		
+		return sterowanie;
+	}
+	
+	OptimizerEV.Form createForm24(ArrayList<Double> priceVector, DayData constainMarker)
+	{
+		OptimizerEV.Form form = createForm24(priceVector);
+		
+		form.setOgraniczeniaHandluDom(constainMarker);
+				
+		return form;
+	}
+	
+	
+	OptimizerEV.Form createForm24(ArrayList<Double> priceVector)
+	{
+		OptimizerEV.Form form = new OptimizerEV.Form();
+		
+		form.setIDprosumenta(ID);
+		
+		ArrayList<Double> generation = new ArrayList<>();
+		ArrayList<Double> consumption = new ArrayList<>();
+		
+		int i=0;
+		while (i<Stale.horyzontCzasowy)
+		{
+			int indeks = i+LokalneCentrum.getTimeIndex();
+			DayData d = dayDataList.get(indeks);
+			
+			consumption.add(d.getConsumption());
+			generation.add(d.getTrueGeneration());
+			
+			i++;
+		}
+		
+		form.setConsumption(consumption);
+		form.setGeneration(generation);
+		
+		DayData d = dayDataList.get(LokalneCentrum.getTimeIndex());
+
+		form.setStanPoczatkowyEB(d.getStanBateriiNaPoczatkuSlotu());
+		
+		form.setPrices(priceVector);
+		
+		form.setPojemnoscBaterii(pojemnoscBaterii);
+		form.setPredkoscBaterii(this.predkoscBaterii);
+		
+		form.setIsEVAvailable(false);
+		
+		
+		return form;
+	}
+	
+	public void takePriceVector(ArrayList<Double> priceVector)
+	{		
+		Point p1 =null;
+		if (active)
+		{	
+			OptimizerEV.Sterowanie sterowanieForPriceVector =wyznaczSterowanieDlaAktywnegoProsumenta(priceVector);	
+			p1 = getPunktFunkcjiUzytecznosci(sterowanieForPriceVector,priceVector);
+			
+			//int transactionIteration = rynek.getIteracja();
+			//reporter.createSterowanieReport(sterowanieForPriceVector,this,"",priceVector, transactionIteration);
+		}
+		else
+		{
+			p1 = getPunktFunkcjiUzytecznosciDlaPasywnegoProsumenta(priceVector);
+		}
+		
+		rynek.addPricePoint(this,p1);
+		
+		//transactionIteration++;
+	}
+	
+	
+	void putSterowanieIntoDayData(OptimizerEV.Sterowanie sterowanieForPriceVector)
+	{
+		int currentTime =LokalneCentrum.getTimeIndex();
+		
+		ArrayList<DayData> dList =sterowanieForPriceVector.getDList();
+		DayData d =dList.get(0);
+		d.setGeneration(dayDataList.get(currentTime).getGeneration());
+		dayDataList.set(currentTime, d);
+		
+		//przepisz stan baterii w kolejnym slocie
+		dayDataList.get(currentTime+1).setStanBateriiNaPoczatkuSlotu(dList.get(1).getStanBateriiNaPoczatkuSlotu());
+		
+	}
+	
+	//TODO
+	//wykonaj optymalizacje przy uwzglednieniu wynikow handlu
+	public void getKontrakt(ArrayList<Double> priceVector, DayData constainMarker)
+	{	
+		int timeIndex =LokalneCentrum.getTimeIndex();
+		
+		double cenaNaRynkuLokalnym = priceVector.get(0);
+		
+		if (active)
+		{
+			OptimizerEV.Sterowanie sterowanieForPriceVector =wyznaczSterowanieDlaAktywnegoProsumenta(priceVector,constainMarker );
+			
+			putSterowanieIntoDayData(sterowanieForPriceVector);
+			
+		}
+		else
+		{
+			
+			double nabytaEnergia = constainMarker.getGeneration();
+			DayData d =dayDataList.get(timeIndex);
+			nabytaEnergia = Math.min(nabytaEnergia,d.getConsumption());
+			
+			d.setZRynekNaKonsumpcje(nabytaEnergia);
+			d.setCenaNaLokalnymRynku(cenaNaRynkuLokalnym);
+			
+			
+			dayDataList.set(timeIndex, d);
+		}
+	}
+	
+	
 	
 	
 }

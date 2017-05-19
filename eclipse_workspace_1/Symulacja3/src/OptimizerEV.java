@@ -604,10 +604,7 @@ public class OptimizerEV extends OptimizerCore {
 	}
 	
 	void dodajOgraniczeniaEVDlaPojedynczegoSamochodu() throws IloException
-	{
-		
-		
-		
+	{	
 		ArrayList<Integer> statusList =form.statusyEV;
 		int i=0;
 		while(i<Stale.horyzontCzasowy)

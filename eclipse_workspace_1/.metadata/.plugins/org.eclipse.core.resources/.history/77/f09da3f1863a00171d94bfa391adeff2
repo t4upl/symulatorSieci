@@ -1,0 +1,391 @@
+import java.util.ArrayList;
+
+public class ProsumentEV extends Prosument {
+
+	//lista zawiera dane dotyczace uzycia akumualtorow EV
+	private ArrayList<EVData> eVDataList = new ArrayList<>();
+	
+	Reporter reporter = Reporter.getInstance();
+
+	
+	//-----------------------
+	public ArrayList<EVData> getEVDataList() {
+		return eVDataList;
+	} 
+	
+	
+	@Override
+	public void createEmptyDataList(int size)
+	{	
+		super.createEmptyDataList(size);
+		
+		int a=0;
+		while (a<size)
+		{
+			EVData ev = new EVData();
+			eVDataList.add(ev);
+			a++;
+		}
+	}
+	
+	@Override
+	public void performEndOfSimulationCalculations()
+	{
+		print("performEndOfSimulationCalculations EV -need sto be filled out");
+	}
+	
+	@Override
+	public void loadData()
+	{
+		super.loadData();
+		
+		ArrayList<String> godzinyPodrozy = loader.loadCars(ID);
+		createListaPodrozy(godzinyPodrozy);
+	}
+	
+	
+	//uzupelnia(wyplenia wartosciami) liste podrozy
+	void createListaPodrozy(ArrayList<String> godzinyPodrozy)
+	{
+		int status =0;
+		int i=0;
+		
+		String wyjazd = godzinyPodrozy.get(0);
+		String przyjazd = godzinyPodrozy.get(1);
+		
+		//jezeli spotkano Stale.endOfSimulation to wstawiaj tylko 0 do listy (prosuemtn w domu) 
+		Boolean endDataReached = false;
+		
+		while (eVDataList.size()!=dayDataList.size())
+		{
+
+			String hour = dayDataList.get(i).getHour();
+			
+			EVData eVData = new EVData();
+			int statusEVData;
+			
+			if (status==0)
+			{
+				if (hour.equals(wyjazd))
+				{
+					statusEVData=1;
+					status=2;
+				}else
+				{
+					statusEVData=0;
+				}
+			}else
+			{
+				if (hour.equals(przyjazd))
+				{
+					statusEVData=3;
+					status=0;
+				}else
+				{
+					statusEVData=2;
+				}
+			}
+			i++;
+			
+			//sprawdz czy znaleziono Stale.Simualtion end date jezeli tak to wstaiwaj zera
+			
+			if (endDataReached)
+			{
+				statusEVData =0;
+			}else
+			{
+				String day = dayDataList.get(i).getDay();
+				
+				if ((day+" "+hour).equals(Stale.simulationEndDate))
+				{
+					//getInput("Heelo from createListaPodrozy");
+					endDataReached=true;					
+				}
+			}
+
+			eVData.setStatus(statusEVData);
+			eVDataList.add(eVData);
+		}
+		
+	}
+
+	//TODO
+	@Override
+	//price vector ma postac (0) -mniejsza cena dla najblizszego slotu, (1) -normlana, (2) -wieksza	
+	public void takeFirstPriceVector(ArrayList<ArrayList<Double>> ListOfPriceVectors)
+	{	
+		//print("takeFirstPriceVector overwritten");
+		//getInput("takeFirstPriceVector in ProsumentEV "+ID);
+		Point p1 = null;
+		Point p2 = null;
+		Point p3 = null;
+		
+		Point p1EV = null;
+		Point p2EV = null;
+		Point p3EV = null;
+		
+		//vectory cen
+		ArrayList<Double> priceVector = ListOfPriceVectors.get(1);
+		ArrayList<Double> priceVectorSmallerMod= ListOfPriceVectors.get(0);
+		ArrayList<Double> priceVectorBiggerMod= ListOfPriceVectors.get(2);
+
+
+		
+		OptimizerEV.Sterowanie sterowanieForPriceVector = wyznaczSterowanie(priceVector);
+		OptimizerEV.Sterowanie sterowanieForPriceVectorSmallerMod = wyznaczSterowanie(priceVectorSmallerMod);		
+		OptimizerEV.Sterowanie sterowanieForPriceVectorBiggerMod = wyznaczSterowanie(priceVectorBiggerMod);
+		
+		
+		p1 = getPunktFunkcjiUzytecznosci(sterowanieForPriceVector,priceVector);
+		p2 = getPunktFunkcjiUzytecznosci(sterowanieForPriceVectorSmallerMod,priceVectorSmallerMod);
+		p3 = getPunktFunkcjiUzytecznosci(sterowanieForPriceVectorBiggerMod,priceVectorBiggerMod);
+		
+		p1EV = getPunktFunkcjiUzytecznosciEV(sterowanieForPriceVector,priceVector);
+		p2EV = getPunktFunkcjiUzytecznosciEV(sterowanieForPriceVectorSmallerMod,priceVectorSmallerMod);
+		p3EV = getPunktFunkcjiUzytecznosciEV(sterowanieForPriceVectorBiggerMod,priceVectorBiggerMod);
+		
+		rynek.addPricePoint(this,p1);
+		rynek.addPricePoint(this,p2);
+		rynek.addPricePoint(this,p3);
+		
+		rynek.addPricePointEV(this,p1EV);
+		rynek.addPricePointEV(this,p2EV);
+		rynek.addPricePointEV(this,p3EV);
+		
+		
+		//getInput("takeFirstPriceVector -end");
+		
+	}
+	
+	Point getPunktFunkcjiUzytecznosciEV(ArrayList<EVData> L1, ArrayList<Float> priceVector)
+	{
+		Point point = new Point();
+		
+		point.setPrice(priceVector.get(0));	
+		//uncommented for debug
+		EVData ev =L1.get(0);
+		
+		double sprzedaz = ev.getEV_EM();
+		double kupno = ev.getEM_EV();
+		
+		double wolumenEnergii;
+		
+		//0.5, bo blad w reprezentacji floata
+		if (ev.getEVbinKupuj()>0.5)
+		{
+			wolumenEnergii=kupno;
+		}
+		else
+		{
+			wolumenEnergii=-sprzedaz;
+
+		}
+		point.setIloscEnergiiDoKupienia(wolumenEnergii);
+		
+		return point;
+	}
+	
+	OptimizerEV.Sterowanie wyznaczSterowanie (ArrayList<Double> priceVector)
+	{
+		OptimizerEV.Sterowanie sterowanie = new OptimizerEV.Sterowanie();
+		OptimizerEV.Form form =createForm24(priceVector);
+		sterowanie =optimizerEV.wyznaczSterowanie(form);
+		
+		//getInput("wyznacz sterownaie -s top");
+		
+		return sterowanie;
+	}
+	
+	@Override
+	OptimizerEV.Form createForm24(ArrayList<Double> priceVector)
+	{
+		OptimizerEV.Form form24 = super.createForm24(priceVector);
+		
+		form24.isEVAvailable=true;
+		
+		ArrayList<Integer> statusy = new ArrayList<>();
+		
+		int i=0;
+		while (i<Stale.horyzontCzasowy)
+		{
+			int indeks = i+LokalneCentrum.getTimeIndex();
+			EVData ev = eVDataList.get(indeks);
+			
+			statusy.add(ev.getStatus());
+			
+			i++;
+		}
+		
+		form24.setStatusyEV(statusy);
+		
+		EVData ev = eVDataList.get(LokalneCentrum.getTimeIndex());
+		form24.setStanPoczatkowyEV(ev.getEV());
+
+
+
+		
+		return form24;
+	}
+	
+	Point getPunktFunkcjiUzytecznosciEV(OptimizerEV.Sterowanie sterowanie, ArrayList<Double> priceVector)
+	{
+		
+		ArrayList<EVData> L1 =sterowanie.getEvList();
+		
+		Point point = new Point();
+		
+		point.setPrice(priceVector.get(0));	
+		//uncommented for debug
+		EVData ev =L1.get(0);
+		
+		double sprzedaz = ev.getEV_EM();
+		double kupno = ev.getEM_EV();
+		
+		double wolumenEnergii;
+		
+		//0.5, bo blad w reprezentacji floata
+		if (ev.getEVbinKupuj()>0.5)
+		{
+			wolumenEnergii=kupno;
+		}
+		else
+		{
+			wolumenEnergii=-sprzedaz;
+
+		}
+		point.setIloscEnergiiDoKupienia(wolumenEnergii);
+		
+		return point;
+	}
+	
+	//TODO
+	public void getKontrakt(ArrayList<Double> priceVector, DayData constainMarker, DayData constainMarkerEV)
+	{	
+		//getInput("getKontrakt");
+		
+		OptimizerEV.Sterowanie sterowanieForPriceVector =wyznaczSterowanieDlaAktywnegoProsumenta(priceVector,
+				constainMarker,constainMarkerEV );
+		
+		reporter.createReportSterowanie(this, "kontrakty",sterowanieForPriceVector.dList,sterowanieForPriceVector.eVList );
+		
+		//getInput("getKontrakt -wyznaczono sterowanie");
+		
+		putSterowanieIntoDayData(sterowanieForPriceVector);
+		putSterowanieIntoEVData(sterowanieForPriceVector);
+		
+		
+		//getInput("getKontrakt -end");
+	}
+	
+	void putSterowanieIntoEVData(OptimizerEV.Sterowanie sterowanieForPriceVector)
+	{
+		int currentTime =LokalneCentrum.getTimeIndex();
+		
+		ArrayList<EVData> eVList =sterowanieForPriceVector.getEvList();
+		EVData ev =eVList.get(0);
+		
+		this.eVDataList.set(currentTime, ev);
+		
+		//print("eVDataList "+eVDataList.size());
+		
+		EVData evWNastepnymSlocie =this.eVDataList.get(currentTime+1);
+		
+		//przepisz stan baterii w kolejnym slocie
+		evWNastepnymSlocie.setEV(eVList.get(1).getEV());
+		
+		//trap
+		if (evWNastepnymSlocie.status==1 && evWNastepnymSlocie.getEV()<Stale.podrozMinimumEnergii )
+		{
+			print("-----------");
+			print(LokalneCentrum.getCurrentDayHour());
+			print("ID "+ID);
+			print(evWNastepnymSlocie.status);
+			print(evWNastepnymSlocie.getEV());
+			
+			getInput("ERROR in putSterowanieIntoEVData");
+		}
+		
+		//dayDataList.get(currentTime+1).setStanBateriiNaPoczatkuSlotu(dList.get(1).getStanBateriiNaPoczatkuSlotu());
+		
+	}
+	
+	private OptimizerEV.Sterowanie wyznaczSterowanieDlaAktywnegoProsumenta (ArrayList<Double> priceVector, 
+			DayData constainMarker, DayData constainMarkerEV)
+	{
+		OptimizerEV.Sterowanie sterowanie = new OptimizerEV.Sterowanie();
+		OptimizerEV.Form form =createForm24(priceVector, constainMarker, constainMarkerEV);
+		sterowanie =optimizerEV.wyznaczSterowanie(form);
+		
+		return sterowanie;
+	}
+	
+	OptimizerEV.Form createForm24(ArrayList<Double> priceVector, DayData constainMarker,DayData constainMarkerEV)
+	{
+		OptimizerEV.Form form = createForm24(priceVector);
+		
+		form.setOgraniczeniaHandluDom(constainMarker);
+		form.setOgraniczeniaHandluEV(constainMarkerEV);
+				
+		return form;
+	}
+	
+	
+	@Override
+	public void takePriceVector(ArrayList<Double> priceVector)
+	{
+		//print("takePriceVector overwrite");
+		
+		Point p1 = null;
+		Point p1EV = null;
+		
+		OptimizerEV.Sterowanie sterowanieForPriceVector = wyznaczSterowanie(priceVector);
+		
+		p1 = getPunktFunkcjiUzytecznosci(sterowanieForPriceVector,priceVector);
+		p1EV = getPunktFunkcjiUzytecznosciEV(sterowanieForPriceVector,priceVector);
+		
+		rynek.addPricePoint(this,p1);		
+		rynek.addPricePointEV(this,p1EV);
+		
+	}
+	
+	@Override
+	public void obliczRezerwe()
+	{
+		//policz rezerwe za baterie
+		super.obliczRezerwe();
+		
+		print ("obliczRezerwe by "+ID );
+		double stanAkumulatoraNaKoniecSymulacji =eVDataList.get(LokalneCentrum.getSimulationEndDateIndex()).EV;
+				
+		reserveBonus +=stanAkumulatoraNaKoniecSymulacji*Stale.kosztAmortyzacjiAkumulatoraEV;
+		
+		
+		totalCost= costNoReserve -reserveBonus;
+	}
+	
+	public void addProsumentEV(ProsumentEV prosument2)
+	{		
+		ArrayList<DayData> eVlist = this.getEVDataList();
+		ArrayList<DayData> eVList2 = prosument2.getEVDataList();
+
+		int a=0;
+		while (a<dayDataList.size())
+		{
+			DayData dayData = dayDataList.get(a);
+			DayData dayData2 = dayDataList2.get(a);
+			
+			dayData.addEVData(dayData2,a);
+	
+			a++;
+		}
+		
+	}
+	
+	void addEVData( , int index)
+	{
+		
+	}
+	
+		
+	
+}

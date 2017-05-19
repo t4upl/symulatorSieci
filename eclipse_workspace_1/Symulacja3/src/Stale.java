@@ -2,7 +2,7 @@
 public class Stale {
 	
 	
-	static final int scenariusz=19;
+	static final int scenariusz=17;
 	
 	//okresla czy wykorzystac cenyz  generatora cyz wykorzystac wektor cena z zewnatrz
 	//np z poprzedniej iteracji

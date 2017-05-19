@@ -1,0 +1,268 @@
+import java.util.ArrayList;
+
+public class ProsumentVirtual extends Prosument {
+
+	
+	//zapelniane dnaymi rpzsy konsumpcji prosumentow
+	private ArrayList<ArrayList<EVData>> eVDataListOfLists = new ArrayList<>();
+	
+	//budowany po konsumpcji
+	private ArrayList<EVData> eVDataSumy = new ArrayList<>();
+
+
+	//Singletony
+	OptimizerVirtual optimizerVirtual = OptimizerVirtual.getInstance();
+	Reporter reporter =Reporter.getInstance();
+
+
+	
+	//----------------------------------
+	
+	ProsumentVirtual(ArrayList<Prosument> listaProsumentow)
+	{
+		int i=0;
+		while (i<listaProsumentow.size())
+		{
+			Prosument prosument = listaProsumentow.get(i);
+			cosumeProsument(prosument); 
+			i++;
+		}
+		
+		///po zjedzeniu konsumentow wynuluj liste
+		listaProsumentow = null;
+		
+		
+	}
+	
+	void zainicjalizujEVDataSumy()
+	{
+		if (eVDataListOfLists.size()>0)
+		{
+			int i=0;
+			while (i<eVDataListOfLists.get(0).size())
+			{
+				
+				eVDataSumy.add(new EVData());
+				i++;
+			}
+		}
+		
+	}
+	
+	void cosumeProsument (Prosument prosument)
+	{
+		
+		predkoscBaterii+=prosument.predkoscBaterii;
+		pojemnoscBaterii+=prosument.pojemnoscBaterii;
+		
+		ArrayList<DayData> dListProsument = prosument.getDayDataList();
+		
+		int i=0;
+		while (i<dListProsument.size())
+		{
+			
+			DayData d2 = dListProsument.get(i);
+			
+			if (!(i<dayDataList.size()))
+			{
+				DayData dNew = new DayData();
+				
+				dNew.setHour(d2.getHour());
+				dNew.setDay(d2.getDay());
+				
+				dayDataList.add(dNew);
+				
+			}
+			
+			DayData d = dayDataList.get(i);
+			
+			d.setConsumption(d.getConsumption()+d2.getConsumption());
+			d.setTrueGeneration(d.getTrueGeneration()+d2.getTrueGeneration());
+			
+			i++;
+		}
+		
+		
+		if (prosument instanceof ProsumentEV)
+		{
+			eVDataListOfLists.add(((ProsumentEV) prosument).getEVDataList());			
+		}
+	}
+	
+	public void zaktualizujHandel()
+	{
+		if (Stale.isScenariuszEV)
+		{
+			zaktualizujHandelEV();
+		}else
+		{
+			zaktualizujHandelNoEV();
+		}
+	}
+	
+	void zaktualizujHandelNoEV()
+	{
+		//z Prosuemnta
+		super.zaktualizujHandelBrakHandlu();
+	}
+	
+	void zaktualizujHandelEV()
+	{
+		OptimizerVirtual.Sterowanie sterowanie = wyznaczSterowanie();
+		putSterowanieIntoDayData(sterowanie);
+		putSterowanieIntoEVData(sterowanie);
+
+		//getInput("zaktualizuje Handel EV -end");
+	}
+	
+	void putSterowanieIntoEVData(OptimizerVirtual.Sterowanie sterowanie)
+	{
+		int currentTime =LokalneCentrum.getTimeIndex();
+		
+		int i=0;
+		while (i<eVDataListOfLists.size())
+		{
+			print ("putSterowanieIntoEVData "+i);
+			ArrayList<EVData> temp =eVDataListOfLists.get(i);
+			ArrayList<EVData> tempFromSteorwanie =sterowanie.eVList.get(i);
+			
+			temp.set(currentTime, tempFromSteorwanie.get(0));
+			temp.set(currentTime+1, tempFromSteorwanie.get(1));
+			
+			//trap
+			EVData eVDataZeSterowania =tempFromSteorwanie.get(0); 
+			if (temp.get(currentTime).status==1 && temp.get(currentTime).EV<Stale.podrozMinimumEnergii )
+			{
+				getInput("putSterowanieIntoEVData -something wetn wrong");
+			}
+			
+			if (temp.get(currentTime+1).status==1 && temp.get(currentTime+1).EV<Stale.podrozMinimumEnergii )
+			{
+				getInput("putSterowanieIntoEVData -something wetn wrong");
+			}
+			
+			
+			i++;
+		}
+		
+		
+				
+		
+		
+	}
+	
+	void putSterowanieIntoDayData(OptimizerVirtual.Sterowanie sterowanieForPriceVector)
+	{
+		int currentTime =LokalneCentrum.getTimeIndex();
+		
+		ArrayList<DayData> dList =sterowanieForPriceVector.dList;
+		DayData d =dList.get(0);
+		d.setGeneration(dayDataList.get(currentTime).getGeneration());
+		dayDataList.set(currentTime, d);
+		
+		//przepisz stan baterii w kolejnym slocie
+		dayDataList.get(currentTime+1).setStanBateriiNaPoczatkuSlotu(dList.get(1).getStanBateriiNaPoczatkuSlotu());
+	}
+	
+	OptimizerVirtual.Sterowanie wyznaczSterowanie ()
+	{
+		OptimizerVirtual.Sterowanie sterowanie = new OptimizerVirtual.Sterowanie();
+		OptimizerVirtual.Form form =createForm24();
+		sterowanie =optimizerVirtual.wyznaczSterowanie(form);
+		
+		//getInput("wyznacz sterownaie -s top");
+		
+		return sterowanie;
+	}
+	
+	OptimizerVirtual.Form createForm24( )
+	{
+		OptimizerVirtual.Form form24 = new OptimizerVirtual.Form();
+				
+		form24.predkoscBaterii =this.predkoscBaterii;
+		form24.pojemnoscBaterii =this.pojemnoscBaterii;
+		
+		ArrayList<Double> generation = new ArrayList<>();
+		ArrayList<Double> consumption = new ArrayList<>();
+		
+		int i=0;
+		while (i<Stale.horyzontCzasowy)
+		{
+			int indeks = i+LokalneCentrum.getTimeIndex();
+			DayData d = dayDataList.get(indeks);
+			
+			consumption.add(d.getConsumption());
+			generation.add(d.getTrueGeneration());
+			
+			i++;
+		}
+		
+		form24.consumption=consumption;
+		form24.generation=generation;
+		
+		DayData d = dayDataList.get(LokalneCentrum.getTimeIndex());
+		form24.stanPoczatkowyEB=d.getStanBateriiNaPoczatkuSlotu();
+		
+		ArrayList<ArrayList<Integer>> statusListOfLists = new ArrayList<>();
+		
+		ArrayList<Double> EVstanyPoczatkowe = new ArrayList<>();
+		
+		i=0;
+		while (i<eVDataListOfLists.size())
+		{
+			//dodaj status
+			ArrayList<Integer> statusList = new ArrayList<>();	
+			ArrayList<EVData> tempList  = eVDataListOfLists.get(i);
+			
+			int j=0;
+			while (j<Stale.horyzontCzasowy)
+			{
+				statusList.add(tempList.get(LokalneCentrum.getTimeIndex()+j).getStatus());
+				j++;
+			}
+			
+			statusListOfLists.add(statusList);
+			
+			//dodaj stan poczatkowy
+			EVstanyPoczatkowe.add(tempList.get(LokalneCentrum.getTimeIndex()+j).getEV());
+			
+			i++;
+		}
+		
+		form24.statusListOfLists=statusListOfLists;
+		form24.stanyPoczatkoweEV = EVstanyPoczatkowe;
+		
+		
+		return form24;
+	}
+	
+	public void endSimulation()
+	{
+		if (Stale.isScenariuszEV)
+		{
+			endSimulationEV();
+		}else
+		{
+			endSimulationNoEV();
+		}
+	}
+	
+	void endSimulationEV()
+	{
+		getInput("endSimulationEV");
+
+	}
+	
+	void endSimulationNoEV()
+	{
+		super.performEndOfSimulationCalculationsBrakHandluWSieci();
+		super.obliczTotalCost();
+		super.obliczRezerwe();
+		
+		reporter.createProsumentReport((Prosument)this);
+
+	}
+	
+	
+	
+}

@@ -30,7 +30,7 @@ public class CoreClass {
 		System.out.println(ClassName+" " +s);
 	}
 	
-	public void print(float s)
+	public void print(double s)
 	{
 		print(s+"");
 	}
@@ -64,6 +64,28 @@ public class CoreClass {
 		}
 		
 		return outputList;
+	}
+	
+	//sprawdza czy vlaue jest w przedizale <min, max>, jezlei min > max to zamienia wartosci
+	public Boolean isValueInRange (double min, double max, double value)
+	{
+		if (max<min)
+		{
+			double c = max;
+			max =min;
+			min =c;
+		}
+		
+		//nieodkaldnosc Double'a
+		max += Stale.malaLiczba;
+		min -=Stale.malaLiczba;
+		
+		if (min<=value && value <=max)
+		{
+			return true;
+		}
+		
+		return false;
 	}
 	
 }
